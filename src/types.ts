@@ -101,6 +101,15 @@ export interface Stay {
   createdAt: string;
 }
 
+export interface ParkProfile {
+  id: string;
+  name: string;
+  state: string;
+  checkInTime?: string;
+  checkOutTime?: string;
+  notes: string;
+}
+
 export interface PreferenceProfile {
   id: string;
   name: string;
@@ -114,6 +123,7 @@ export interface AppState {
   sites: Campsite[];
   stays: Stay[];
   profiles: PreferenceProfile[];
+  parks?: ParkProfile[];
 }
 
 export interface StayDraft extends Omit<Stay, 'id' | 'createdAt' | 'siteSnapshot'> {
