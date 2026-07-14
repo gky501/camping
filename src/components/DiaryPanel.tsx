@@ -1,10 +1,15 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Eye, Moon, Plus, Search } from 'lucide-react';
+import { BookOpen, Eye, Moon, Pencil, Plus, Search } from 'lucide-react';
 import { formatDateRange } from '../lib/dates';
 import type { Campsite, Stay } from '../types';
 import { StayDetailModal } from './StayDetailModal';
 
-export function DiaryPanel({ sites, stays, onAdd }: { sites: Campsite[]; stays: Stay[]; onAdd: () => void }) {
+export function DiaryPanel({ sites, stays, onAdd, onEdit }: {
+  sites: Campsite[];
+  stays: Stay[];
+  onAdd: () => void;
+  onEdit: (stay: Stay) => void;
+}) {
   const [search, setSearch] = useState('');
   const [selectedStay, setSelectedStay] = useState<Stay>();
   const sorted = useMemo(() => {
@@ -19,10 +24,15 @@ export function DiaryPanel({ sites, stays, onAdd }: { sites: Campsite[]; stays: 
       .sort((a, b) => b.arrivalDate.localeCompare(a.arrivalDate));
   }, [search, sites, stays]);
 
+  function editStay(stay: Stay) {
+    setSelectedStay(undefined);
+    onEdit(stay);
+  }
+
   return (
     <section className="content-page">
       <div className="page-heading">
-        <div><p className="eyebrow">Trip history</p><h2>Camping diary</h2><p>Open any dated stay to review the campsite, exact location, ratings, cost, weather, and notes from that trip.</p></div>
+        <div><p className="eyebrow">Trip history</p><h2>Camping diary</h2><p>Open any dated stay to review or edit the campsite, exact location, ratings, cost, weather, and notes from that trip.</p></div>
         <button className="primary-button" onClick={onAdd}><Plus size={18} /> Log a stay</button>
       </div>
       <div className="summary-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
@@ -50,14 +60,17 @@ export function DiaryPanel({ sites, stays, onAdd }: { sites: Campsite[]; stays: 
                     {stay.nightlyRate !== undefined && <span className="chip">${stay.nightlyRate.toFixed(2)}/night</span>}
                     {stay.wouldReturn !== undefined && <span className="chip">{stay.wouldReturn ? 'Would return' : 'Would not return'}</span>}
                   </div>
-                  <button type="button" className="text-button view-stay-button" onClick={() => setSelectedStay(stay)}><Eye size={16} /> View full stay</button>
+                  <div className="button-row diary-entry-actions">
+                    <button type="button" className="text-button view-stay-button" onClick={() => setSelectedStay(stay)}><Eye size={16} /> View full stay</button>
+                    <button type="button" className="text-button" onClick={() => editStay(stay)}><Pencil size={16} /> Edit stay</button>
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
       )}
-      {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} onClose={() => setSelectedStay(undefined)} />}
+      {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} onEdit={() => editStay(selectedStay)} onClose={() => setSelectedStay(undefined)} />}
     </section>
   );
 }
