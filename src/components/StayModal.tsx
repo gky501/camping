@@ -3,13 +3,14 @@ import { CalendarDays, Crosshair, History, MapPinned, Moon, X } from 'lucide-rea
 import { amenitiesMatch } from '../lib/amenities';
 import { calculateNights } from '../lib/dates';
 import { createId } from '../lib/id';
-import { CRITERIA, type Campsite, type CriterionKey, type RatingMap, type SiteAmenities, type SiteLocation, type SiteSnapshot, type StayDraft } from '../types';
+import { CRITERIA, type Campsite, type CriterionKey, type RatingMap, type SiteAmenities, type SiteLocation, type SiteSnapshot, type Stay, type StayDraft } from '../types';
 import { AmenityCards } from './AmenityCards';
 import { SiteLocationPicker } from './SiteLocationPicker';
 
 interface StayModalProps {
   sites: Campsite[];
   initialSite?: Campsite;
+  initialStay?: Stay;
   onClose: () => void;
   onSave: (draft: StayDraft) => void;
 }
@@ -20,7 +21,7 @@ const tomorrowDate = new Date(todayDate);
 tomorrowDate.setDate(tomorrowDate.getDate() + 1);
 const tomorrow = tomorrowDate.toISOString().slice(0, 10);
 
-function siteLabel(site: Campsite): string {
+function siteLabel(site: SiteLocation): string {
   return [site.park, site.area, site.loop ? `Loop ${site.loop}` : '', site.siteNumber ? `Site ${site.siteNumber}` : ''].filter(Boolean).join(' · ');
 }
 
@@ -34,27 +35,29 @@ function sameLocation(site: Campsite, location: SiteLocation): boolean {
     && site.longitude === location.longitude;
 }
 
-export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProps) {
-  const [selectedSiteId, setSelectedSiteId] = useState(initialSite?.id ?? '');
-  const [siteSearch, setSiteSearch] = useState(initialSite ? siteLabel(initialSite) : '');
-  const [park, setPark] = useState(initialSite?.park ?? '');
-  const [region, setRegion] = useState(initialSite?.state ?? 'Arkansas');
-  const [area, setArea] = useState(initialSite?.area ?? '');
-  const [loop, setLoop] = useState(initialSite?.loop ?? '');
-  const [siteNumber, setSiteNumber] = useState(initialSite?.siteNumber ?? '');
-  const [latitude, setLatitude] = useState(initialSite ? String(initialSite.latitude) : '');
-  const [longitude, setLongitude] = useState(initialSite ? String(initialSite.longitude) : '');
+export function StayModal({ sites, initialSite, initialStay, onClose, onSave }: StayModalProps) {
+  const editing = Boolean(initialStay);
+  const initialLocation = initialStay?.siteSnapshot ?? initialSite;
+  const [selectedSiteId, setSelectedSiteId] = useState(initialStay?.siteId ?? initialSite?.id ?? '');
+  const [siteSearch, setSiteSearch] = useState(initialLocation ? siteLabel(initialLocation) : '');
+  const [park, setPark] = useState(initialLocation?.park ?? '');
+  const [region, setRegion] = useState(initialLocation?.state ?? 'Arkansas');
+  const [area, setArea] = useState(initialLocation?.area ?? '');
+  const [loop, setLoop] = useState(initialLocation?.loop ?? '');
+  const [siteNumber, setSiteNumber] = useState(initialLocation?.siteNumber ?? '');
+  const [latitude, setLatitude] = useState(initialLocation ? String(initialLocation.latitude) : '');
+  const [longitude, setLongitude] = useState(initialLocation ? String(initialLocation.longitude) : '');
   const [siteNotes, setSiteNotes] = useState(initialSite?.notes ?? '');
-  const [amenities, setAmenities] = useState<SiteAmenities>(initialSite?.amenities ?? { features: [] });
-  const [updateLocationRecord, setUpdateLocationRecord] = useState(true);
+  const [amenities, setAmenities] = useState<SiteAmenities>(initialStay?.siteSnapshot?.amenities ?? initialSite?.amenities ?? { features: [] });
+  const [updateLocationRecord, setUpdateLocationRecord] = useState(!editing);
   const [locationMessage, setLocationMessage] = useState('');
-  const [arrivalDate, setArrivalDate] = useState(today);
-  const [departureDate, setDepartureDate] = useState(tomorrow);
-  const [nightlyRate, setNightlyRate] = useState('');
-  const [journal, setJournal] = useState('');
-  const [weather, setWeather] = useState('');
-  const [wouldReturn, setWouldReturn] = useState<boolean | undefined>(undefined);
-  const [observations, setObservations] = useState<RatingMap>(initialSite ? { ...initialSite.currentFacts } : {});
+  const [arrivalDate, setArrivalDate] = useState(initialStay?.arrivalDate ?? today);
+  const [departureDate, setDepartureDate] = useState(initialStay?.departureDate ?? tomorrow);
+  const [nightlyRate, setNightlyRate] = useState(initialStay?.nightlyRate === undefined ? '' : String(initialStay.nightlyRate));
+  const [journal, setJournal] = useState(initialStay?.journal ?? '');
+  const [weather, setWeather] = useState(initialStay?.weather ?? '');
+  const [wouldReturn, setWouldReturn] = useState<boolean | undefined>(initialStay?.wouldReturn);
+  const [observations, setObservations] = useState<RatingMap>(initialStay ? { ...initialStay.observations } : initialSite ? { ...initialSite.currentFacts } : {});
   const [updateKeys, setUpdateKeys] = useState<CriterionKey[]>([]);
 
   const selectedSite = useMemo(() => sites.find((item) => item.id === selectedSiteId), [selectedSiteId, sites]);
@@ -94,11 +97,39 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
     setUpdateLocationRecord(true);
   }
 
+  function loadExistingStay(stay: Stay) {
+    const site = sites.find((item) => item.id === stay.siteId);
+    const snapshot = stay.siteSnapshot ?? site;
+    setSelectedSiteId(stay.siteId);
+    setSiteSearch(snapshot ? siteLabel(snapshot) : site ? siteLabel(site) : '');
+    if (snapshot) {
+      setPark(snapshot.park);
+      setRegion(snapshot.state);
+      setArea(snapshot.area ?? '');
+      setLoop(snapshot.loop);
+      setSiteNumber(snapshot.siteNumber);
+      setLatitude(String(snapshot.latitude));
+      setLongitude(String(snapshot.longitude));
+    }
+    setSiteNotes(site?.notes ?? '');
+    setAmenities(stay.siteSnapshot?.amenities ?? site?.amenities ?? { features: [] });
+    setArrivalDate(stay.arrivalDate);
+    setDepartureDate(stay.departureDate);
+    setNightlyRate(stay.nightlyRate === undefined ? '' : String(stay.nightlyRate));
+    setJournal(stay.journal);
+    setWeather(stay.weather ?? '');
+    setWouldReturn(stay.wouldReturn);
+    setObservations({ ...stay.observations });
+    setUpdateKeys([]);
+    setUpdateLocationRecord(false);
+  }
+
   useEffect(() => {
-    if (initialSite) loadSite(initialSite);
-    // The initial site is intentionally applied only when the modal opens.
+    if (initialStay) loadExistingStay(initialStay);
+    else if (initialSite) loadSite(initialSite);
+    // Initial values are intentionally applied only when this modal is opened for a different record.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialSite?.id]);
+  }, [initialSite?.id, initialStay?.id]);
 
   function handleSiteSearch(raw: string) {
     setSiteSearch(raw);
@@ -201,12 +232,12 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="stay-title" onMouseDown={(event) => event.stopPropagation()}>
         <div className="modal-header">
-          <div><p className="eyebrow">Camping diary</p><h2 id="stay-title">Log a stay</h2></div>
+          <div><p className="eyebrow">Camping diary</p><h2 id="stay-title">{editing ? 'Edit stay' : 'Log a stay'}</h2></div>
           <button className="icon-button" onClick={onClose} aria-label="Close"><X /></button>
         </div>
         <form onSubmit={submit}>
           <section className="form-section">
-            <div className="section-heading-row"><div><h3>Where did you stay?</h3><p>Choose one from your history or type a new campsite. The fields remain editable.</p></div><History size={22} /></div>
+            <div className="section-heading-row"><div><h3>Where did you stay?</h3><p>{editing ? 'The campsite saved with this diary entry is loaded below. You can correct it or select another campsite.' : 'Choose one from your history or type a new campsite. The fields remain editable.'}</p></div><History size={22} /></div>
             <label className="field">
               <span>Find a previous campsite or start typing a new one</span>
               <input list="campsite-history" value={siteSearch} onChange={(event) => handleSiteSearch(event.target.value)} placeholder="Lake Ouachita · Crystal Springs · Loop C · Site 55" autoComplete="off" />
@@ -227,7 +258,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
           </section>
 
           <section className="form-section">
-            <div className="section-heading-row"><div><h3>Hookups and site setup</h3><p>{selectedSite ? 'Previous amenities are prefilled. Update them when the permanent campsite information has changed.' : 'These details will become the starting profile for the new campsite.'}</p></div></div>
+            <div className="section-heading-row"><div><h3>Hookups and site setup</h3><p>{selectedSite ? 'The amenities recorded for this stay are prefilled. Choose the update option only when the permanent campsite profile should also change.' : 'These details will become the starting profile for the new campsite.'}</p></div></div>
             <AmenityCards value={amenities} onChange={setAmenities} />
             {selectedSite && detailsChanged && (
               <label className="update-location-check"><input type="checkbox" checked={updateLocationRecord} onChange={(event) => setUpdateLocationRecord(event.target.checked)} /> Update the campsite record with these location, amenity, note, or map changes</label>
@@ -258,7 +289,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
           </section>
 
           <section className="form-section">
-            <div className="section-heading-row"><div><h3>What was the site like?</h3><p>{selectedSite ? 'Previous physical information is prefilled. Check “update profile” only when the campsite itself changed.' : 'These ratings will become the starting physical profile for this new campsite.'}</p></div><CalendarDays size={22} /></div>
+            <div className="section-heading-row"><div><h3>What was the site like?</h3><p>{editing ? 'These are the ratings saved with this stay. Changing them updates this diary entry; check “update site profile” only when the permanent campsite information should also change.' : selectedSite ? 'Previous physical information is prefilled. Check “update profile” only when the campsite itself changed.' : 'These ratings will become the starting physical profile for this new campsite.'}</p></div><CalendarDays size={22} /></div>
             <div className="observation-table">
               {CRITERIA.map((criterion) => {
                 const previous = selectedSite?.currentFacts[criterion.key];
@@ -266,7 +297,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
                 const changed = previous !== current;
                 return (
                   <div className="observation-row" key={criterion.key}>
-                    <div><strong>{criterion.label}</strong><small>{previous === undefined ? 'No previous rating' : `Previous: ${previous}/5`}</small></div>
+                    <div><strong>{criterion.label}</strong><small>{previous === undefined ? 'No current site-profile rating' : `Current site profile: ${previous}/5`}</small></div>
                     <select aria-label={`${criterion.label} rating`} value={current ?? ''} onChange={(event) => setRating(criterion.key, event.target.value)}>
                       <option value="">Did not check</option>
                       {[0, 1, 2, 3, 4, 5].map((rating) => <option key={rating} value={rating}>{rating} — {rating === 0 ? 'Terrible/none' : rating === 5 ? 'Excellent' : 'Rated'}</option>)}
@@ -296,7 +327,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
 
           <div className="modal-actions">
             <button type="button" className="secondary-button" onClick={onClose}>Cancel</button>
-            <button type="submit" className="primary-button" disabled={!canSave}>Save diary entry</button>
+            <button type="submit" className="primary-button" disabled={!canSave}>{editing ? 'Save changes' : 'Save diary entry'}</button>
           </div>
         </form>
       </div>
