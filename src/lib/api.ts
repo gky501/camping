@@ -14,6 +14,8 @@ function normalizeState(state: AppState): AppState {
         status: String(site.status) === 'saved' ? 'wishlist' : site.status,
         area: splitCrystalSprings ? 'Crystal Springs' : (site.area ?? ''),
         loop: splitCrystalSprings ? 'C' : site.loop,
+        // Imported spreadsheet stay counts were intentionally cleared; dated diary entries are the source of truth.
+        legacyStayCount: 0,
       };
     }),
   };
