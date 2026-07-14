@@ -29,6 +29,7 @@ export type MonthKey = (typeof MONTHS)[number]['key'];
 export type CriterionKey = (typeof CRITERIA)[number]['key'];
 export type RatingMap = Partial<Record<CriterionKey, number>>;
 export type MonthRatingMap = Partial<Record<MonthKey, number>>;
+export type CampsiteStatus = 'visited' | 'wishlist' | 'avoid' | 'reserved' | 'saved'; // saved is retained only for legacy imports
 
 export interface Campsite {
   id: string;
@@ -45,7 +46,17 @@ export interface Campsite {
   legacyStayCount: number;
   importedRating?: number;
   favorite?: boolean;
-  status?: 'visited' | 'saved' | 'avoid' | 'reserved';
+  status?: CampsiteStatus;
+}
+
+export interface WishlistSiteDraft {
+  park: string;
+  state: string;
+  loop: string;
+  siteNumber: string;
+  latitude: number;
+  longitude: number;
+  notes: string;
 }
 
 export interface Stay {
