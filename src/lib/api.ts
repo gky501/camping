@@ -112,7 +112,7 @@ export async function updateStayRemote(draft: StayDraft, stay: Stay): Promise<vo
 }
 
 export async function saveParkRemote(original: ParkProfile, park: ParkProfile): Promise<void> {
-  await request(`/api/parks/${encodeURIComponent(original.id)}`, {
+  await request('/api/parks/by-name', {
     method: 'PATCH',
     body: JSON.stringify({
       ...park,
