@@ -19,4 +19,4 @@ CREATE TABLE IF NOT EXISTS camper_profiles (
 INSERT OR IGNORE INTO camper_profiles (id,name,type,notes)
 VALUES ('camper-tent','Tent Camping','tent','');
 
-ALTER TABLE stays ADD COLUMN camper_id TEXT;
+-- The Pages Function adds stays.camper_id only when the column is missing.
