@@ -14,6 +14,9 @@ export async function ensureDiarySchema(db: D1Database) {
     await db.prepare("ALTER TABLE sites ADD COLUMN area TEXT NOT NULL DEFAULT ''").run();
     await db.prepare("UPDATE sites SET area='Crystal Springs', loop='C' WHERE id='lake-ouachita-crystal-springs-c-55' AND loop='Crystal Springs C'").run();
   }
+  if (!siteNames.has('amenities_json')) {
+    await db.prepare("ALTER TABLE sites ADD COLUMN amenities_json TEXT NOT NULL DEFAULT '{}'").run();
+  }
   const stayColumns = await db.prepare('PRAGMA table_info(stays)').all();
   const stayNames = new Set((stayColumns.results as Array<Record<string, unknown>>).map((row) => String(row.name)));
   if (!stayNames.has('site_snapshot_json')) await db.prepare('ALTER TABLE stays ADD COLUMN site_snapshot_json TEXT').run();
@@ -62,6 +65,7 @@ export async function loadBootstrap(db: D1Database) {
     sites: (sitesResult.results as Array<Record<string, unknown>>).map((row) => ({
       id: row.id, park: row.park, state: row.state, area: row.area ?? '', loop: row.loop, siteNumber: row.site_number,
       latitude: Number(row.latitude), longitude: Number(row.longitude), notes: row.notes,
+      amenities: JSON.parse(String(row.amenities_json || '{}')),
       viewTypes: JSON.parse(String(row.view_types_json || '[]')), legacyStayCount: Number(row.legacy_stay_count || 0),
       importedRating: row.imported_rating === null ? undefined : Number(row.imported_rating), favorite: Boolean(row.favorite), status: row.status,
       currentFacts: factsBySite.get(String(row.id)) ?? {}, seasonalRatings: seasonsBySite.get(String(row.id)) ?? {},
@@ -88,15 +92,15 @@ export async function createSite(db: D1Database, body: JsonObject) {
   const area = String(body.area || '').trim(); const loop = String(body.loop || '').trim(); const siteNumber = String(body.siteNumber || '').trim();
   const latitude = Number(body.latitude); const longitude = Number(body.longitude);
   if (!park || !siteNumber || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return error('Park, site, latitude, and longitude are required.');
-  await db.prepare(`INSERT INTO sites (id,park,state,area,loop,site_number,latitude,longitude,notes,view_types_json,legacy_stay_count,imported_rating,favorite,status)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id, park, state, area, loop, siteNumber, latitude, longitude, String(body.notes || ''), JSON.stringify(body.viewTypes ?? []), Number(body.legacyStayCount || 0), body.importedRating === undefined ? null : Number(body.importedRating), body.favorite ? 1 : 0, String(body.status || 'wishlist')).run();
+  await db.prepare(`INSERT INTO sites (id,park,state,area,loop,site_number,latitude,longitude,notes,amenities_json,view_types_json,legacy_stay_count,imported_rating,favorite,status)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(id, park, state, area, loop, siteNumber, latitude, longitude, String(body.notes || ''), JSON.stringify(body.amenities ?? {}), JSON.stringify(body.viewTypes ?? []), Number(body.legacyStayCount || 0), body.importedRating === undefined ? null : Number(body.importedRating), body.favorite ? 1 : 0, String(body.status || 'wishlist')).run();
   return json({ ok: true, id }, 201);
 }
 
 export async function updateSite(db: D1Database, id: string, body: JsonObject) {
   await ensureDiarySchema(db);
-  await db.prepare(`UPDATE sites SET park=?,state=?,area=?,loop=?,site_number=?,latitude=?,longitude=?,notes=?,view_types_json=?,favorite=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .bind(body.park, body.state, body.area ?? '', body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'wishlist', id).run();
+  await db.prepare(`UPDATE sites SET park=?,state=?,area=?,loop=?,site_number=?,latitude=?,longitude=?,notes=?,amenities_json=?,view_types_json=?,favorite=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .bind(body.park, body.state, body.area ?? '', body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.amenities ?? {}), JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'wishlist', id).run();
   return json({ ok: true });
 }
 
