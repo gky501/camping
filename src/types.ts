@@ -31,6 +31,29 @@ export type RatingMap = Partial<Record<CriterionKey, number>>;
 export type MonthRatingMap = Partial<Record<MonthKey, number>>;
 export type CampsiteStatus = 'visited' | 'wishlist' | 'avoid' | 'reserved' | 'saved';
 
+export type ElectricService = '30amp' | '50amp' | 'none';
+export type WaterService = 'yes' | 'partial' | 'none';
+export type SewerService = 'site' | 'station' | 'none';
+export type YesNo = 'yes' | 'no';
+export type ParkingSurface = 'asphalt' | 'concrete' | 'gravel' | 'dirt' | 'grass';
+export type ParkingEntry = 'back-in' | 'pull-through';
+export type ShadeLevel = 'full' | 'partial' | 'open';
+export type GeneratorPolicy = 'allowed' | 'restricted' | 'not-allowed';
+export type SiteFeature = 'picnic-table' | 'fire-ring' | 'grill' | 'waterfront' | 'bathhouse-nearby';
+
+export interface SiteAmenities {
+  electric?: ElectricService;
+  water?: WaterService;
+  sewer?: SewerService;
+  wifi?: YesNo;
+  surface?: ParkingSurface;
+  entry?: ParkingEntry;
+  shade?: ShadeLevel;
+  generator?: GeneratorPolicy;
+  siteLengthFeet?: number;
+  features?: SiteFeature[];
+}
+
 export interface SiteLocation {
   park: string;
   state: string;
@@ -41,9 +64,14 @@ export interface SiteLocation {
   longitude: number;
 }
 
+export interface SiteSnapshot extends SiteLocation {
+  amenities?: SiteAmenities;
+}
+
 export interface Campsite extends SiteLocation {
   id: string;
   notes: string;
+  amenities?: SiteAmenities;
   viewTypes: string[];
   currentFacts: RatingMap;
   seasonalRatings: MonthRatingMap;
@@ -55,12 +83,13 @@ export interface Campsite extends SiteLocation {
 
 export interface WishlistSiteDraft extends SiteLocation {
   notes: string;
+  amenities: SiteAmenities;
 }
 
 export interface Stay {
   id: string;
   siteId: string;
-  siteSnapshot?: SiteLocation;
+  siteSnapshot?: SiteSnapshot;
   arrivalDate: string;
   departureDate: string;
   nights: number;
@@ -88,7 +117,7 @@ export interface AppState {
 }
 
 export interface StayDraft extends Omit<Stay, 'id' | 'createdAt' | 'siteSnapshot'> {
-  siteSnapshot: SiteLocation;
+  siteSnapshot: SiteSnapshot;
   updateCurrentKeys: CriterionKey[];
   createSite?: Campsite;
   updateSiteDetails?: Campsite;
