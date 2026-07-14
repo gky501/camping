@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Cloud, CloudOff, Map, Plus, Settings2, TentTree } from 'lucide-react';
+import { BookOpen, Bookmark, Cloud, CloudOff, Map, Plus, Settings2, TentTree } from 'lucide-react';
 import { CampsitesPanel } from './components/CampsitesPanel';
 import { DiaryPanel } from './components/DiaryPanel';
 import { MapPanel } from './components/MapPanel';
 import { PreferencesPanel } from './components/PreferencesPanel';
 import { StayModal } from './components/StayModal';
-import { createStayRemote, loadAppState, persistLocal, saveProfileRemote } from './lib/api';
+import { WishlistModal } from './components/WishlistModal';
+import { WishlistPanel } from './components/WishlistPanel';
+import { createSiteRemote, createStayRemote, deleteProfileRemote, loadAppState, persistLocal, saveProfileRemote } from './lib/api';
 import { createId } from './lib/id';
-import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft } from './types';
+import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
 
 const tabs = [
   { id: 'map', label: 'Map', icon: Map },
   { id: 'diary', label: 'Diary', icon: BookOpen },
+  { id: 'wishlist', label: 'Wish list', icon: Bookmark },
   { id: 'sites', label: 'Campsites', icon: TentTree },
   { id: 'preferences', label: 'Preferences', icon: Settings2 },
 ] as const;
@@ -26,6 +29,7 @@ export default function App() {
   const [selectedSiteId, setSelectedSiteId] = useState<string>();
   const [staySite, setStaySite] = useState<Campsite | undefined>();
   const [showStayModal, setShowStayModal] = useState(false);
+  const [showWishlistModal, setShowWishlistModal] = useState(false);
 
   useEffect(() => {
     loadAppState().then(({ state: loaded, mode: loadedMode }) => {
@@ -70,7 +74,7 @@ export default function App() {
     };
 
     const nextSites = state.sites.map((site) => {
-      if (site.id !== draft.siteId || draft.updateCurrentKeys.length === 0) return site;
+      if (site.id !== draft.siteId) return site;
       const currentFacts = { ...site.currentFacts };
       for (const key of draft.updateCurrentKeys) {
         const value = draft.observations[key];
@@ -84,6 +88,25 @@ export default function App() {
     setShowStayModal(false);
     setTab('diary');
     createStayRemote(draft, stay).catch(() => setMode('local'));
+  }
+
+  function saveWishlistSite(draft: WishlistSiteDraft) {
+    if (!state) return;
+    const site: Campsite = {
+      id: createId('site'),
+      ...draft,
+      viewTypes: [],
+      currentFacts: {},
+      seasonalRatings: {},
+      legacyStayCount: 0,
+      favorite: false,
+      status: 'wishlist',
+    };
+    setState({ ...state, sites: [...state.sites, site] });
+    setSelectedSiteId(site.id);
+    setShowWishlistModal(false);
+    setTab('wishlist');
+    createSiteRemote(site).catch(() => setMode('local'));
   }
 
   function saveProfile(profile: PreferenceProfile) {
@@ -101,9 +124,18 @@ export default function App() {
     const copy: PreferenceProfile = {
       ...structuredClone(profile),
       id: createId('profile'),
-      name: `${profile.name} copy`,
+      name: `${profile.name.trim() || 'Preference profile'} copy`,
     };
     saveProfile(copy);
+  }
+
+  function deleteProfile(profile: PreferenceProfile) {
+    if (!state || state.profiles.length <= 1) return;
+    if (!window.confirm(`Delete the preference profile “${profile.name}”? Campsite reviews and diary entries will not be deleted.`)) return;
+    const profiles = state.profiles.filter((item) => item.id !== profile.id);
+    setState({ ...state, profiles });
+    setActiveProfileId(profiles[0]?.id ?? '');
+    deleteProfileRemote(profile.id).catch(() => setMode('local'));
   }
 
   if (!state || !activeProfile) {
@@ -149,6 +181,16 @@ export default function App() {
           />
         )}
         {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} onAdd={() => openStay()} />}
+        {tab === 'wishlist' && (
+          <WishlistPanel
+            sites={state.sites}
+            stays={state.stays}
+            profile={activeProfile}
+            onSelect={(site) => { selectSite(site); setTab('map'); }}
+            onLogStay={openStay}
+            onAdd={() => setShowWishlistModal(true)}
+          />
+        )}
         {tab === 'sites' && (
           <CampsitesPanel
             sites={state.sites}
@@ -158,7 +200,7 @@ export default function App() {
             onLogStay={openStay}
           />
         )}
-        {tab === 'preferences' && <PreferencesPanel profile={activeProfile} onSave={saveProfile} onDuplicate={duplicateProfile} />}
+        {tab === 'preferences' && <PreferencesPanel profile={activeProfile} canDelete={state.profiles.length > 1} onSave={saveProfile} onDuplicate={duplicateProfile} onDelete={deleteProfile} />}
       </main>
 
       <nav className="mobile-nav" aria-label="Mobile navigation">
@@ -168,6 +210,7 @@ export default function App() {
       </nav>
 
       {showStayModal && <StayModal sites={state.sites} initialSite={staySite} onClose={() => setShowStayModal(false)} onSave={saveStay} />}
+      {showWishlistModal && <WishlistModal onClose={() => setShowWishlistModal(false)} onSave={saveWishlistSite} />}
     </div>
   );
 }
