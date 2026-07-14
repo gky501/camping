@@ -1,4 +1,5 @@
 import { Bookmark, MapPin, Moon, Trees } from 'lucide-react';
+import { summarizeAmenities } from '../lib/amenities';
 import { calculateOverall } from '../lib/scoring';
 import type { Campsite, PreferenceProfile, Stay } from '../types';
 import { ScoreBadge } from './ScoreBadge';
@@ -18,6 +19,8 @@ export function SiteCard({ site, profile, stays, selected, onSelect, onLogStay }
   const totalNights = siteStays.reduce((sum, stay) => sum + stay.nights, 0);
   const totalStays = site.legacyStayCount + siteStays.length;
   const isWishlist = site.status === 'wishlist';
+  const locationLine = [site.area, site.loop ? `Loop ${site.loop}` : '', `Site ${site.siteNumber}`].filter(Boolean).join(' · ');
+  const amenitySummary = summarizeAmenities(site.amenities).slice(0, 5);
 
   return (
     <article className={`site-card ${selected ? 'site-card-selected' : ''} ${isWishlist ? 'site-card-wishlist' : ''}`} onClick={onSelect}>
@@ -25,13 +28,14 @@ export function SiteCard({ site, profile, stays, selected, onSelect, onLogStay }
         <div>
           <p className="eyebrow">{site.state}</p>
           <h3>{site.park}</h3>
-          <p className="site-location"><MapPin size={15} /> {site.loop || 'Site'} · Site {site.siteNumber}</p>
+          <p className="site-location"><MapPin size={15} /> {locationLine}</p>
         </div>
         <ScoreBadge score={score} />
       </div>
       <p className="site-note">{site.notes || (isWishlist ? 'Saved to the wish list.' : 'No campsite notes yet.')}</p>
       <div className="chip-row">
         {isWishlist && <span className="chip wishlist-chip"><Bookmark size={13} fill="currentColor" /> Wish list</span>}
+        {amenitySummary.map((amenity) => <span className="chip amenity-chip" key={amenity}>{amenity}</span>)}
         {site.viewTypes.slice(0, 3).map((view) => <span className="chip" key={view}><Trees size={13} /> {view}</span>)}
         {totalStays > 0 && <span className="chip"><Moon size={13} /> {totalStays} {totalStays === 1 ? 'stay' : 'stays'}{totalNights ? ` · ${totalNights} nights` : ''}</span>}
       </div>
