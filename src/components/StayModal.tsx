@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CalendarDays, Crosshair, History, MapPinned, Moon, X } from 'lucide-react';
+import { amenitiesMatch } from '../lib/amenities';
 import { calculateNights } from '../lib/dates';
 import { createId } from '../lib/id';
-import { CRITERIA, type Campsite, type CriterionKey, type RatingMap, type SiteLocation, type StayDraft } from '../types';
+import { CRITERIA, type Campsite, type CriterionKey, type RatingMap, type SiteAmenities, type SiteLocation, type SiteSnapshot, type StayDraft } from '../types';
+import { AmenityCards } from './AmenityCards';
 import { SiteLocationPicker } from './SiteLocationPicker';
 
 interface StayModalProps {
@@ -43,6 +45,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
   const [latitude, setLatitude] = useState(initialSite ? String(initialSite.latitude) : '');
   const [longitude, setLongitude] = useState(initialSite ? String(initialSite.longitude) : '');
   const [siteNotes, setSiteNotes] = useState(initialSite?.notes ?? '');
+  const [amenities, setAmenities] = useState<SiteAmenities>(initialSite?.amenities ?? { features: [] });
   const [updateLocationRecord, setUpdateLocationRecord] = useState(true);
   const [locationMessage, setLocationMessage] = useState('');
   const [arrivalDate, setArrivalDate] = useState(today);
@@ -69,7 +72,9 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
     latitude: latitudeNumber,
     longitude: longitudeNumber,
   };
-  const locationChanged = selectedSite ? !sameLocation(selectedSite, location) || selectedSite.notes !== siteNotes.trim() : false;
+  const detailsChanged = selectedSite
+    ? !sameLocation(selectedSite, location) || selectedSite.notes !== siteNotes.trim() || !amenitiesMatch(selectedSite.amenities, amenities)
+    : false;
   const canSave = Boolean(location.park && location.siteNumber && validCoordinates && nights > 0);
 
   function loadSite(site: Campsite) {
@@ -83,6 +88,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
     setLatitude(String(site.latitude));
     setLongitude(String(site.longitude));
     setSiteNotes(site.notes);
+    setAmenities(site.amenities ?? { features: [] });
     setObservations({ ...site.currentFacts });
     setUpdateKeys([]);
     setUpdateLocationRecord(true);
@@ -103,6 +109,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
     }
     setSelectedSiteId('');
     if (raw.trim() && !park.trim()) setPark(raw.trim());
+    setAmenities({ features: [] });
     setObservations({});
     setUpdateKeys([]);
   }
@@ -118,6 +125,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
     setLatitude('');
     setLongitude('');
     setSiteNotes('');
+    setAmenities({ features: [] });
     setObservations({});
     setUpdateKeys([]);
   }
@@ -161,6 +169,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
       id: siteId,
       ...location,
       notes: siteNotes.trim(),
+      amenities,
       viewTypes: selectedSite?.viewTypes ?? [],
       currentFacts: selectedSite?.currentFacts ?? {},
       seasonalRatings: selectedSite?.seasonalRatings ?? {},
@@ -169,10 +178,11 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
       favorite: selectedSite?.favorite ?? false,
       status: 'visited',
     };
+    const siteSnapshot: SiteSnapshot = { ...location, amenities };
 
     onSave({
       siteId,
-      siteSnapshot: location,
+      siteSnapshot,
       arrivalDate,
       departureDate,
       nights,
@@ -183,7 +193,7 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
       observations,
       updateCurrentKeys: selectedSite ? updateKeys : (Object.keys(observations) as CriterionKey[]),
       createSite: selectedSite ? undefined : siteRecord,
-      updateSiteDetails: selectedSite && locationChanged && updateLocationRecord ? siteRecord : undefined,
+      updateSiteDetails: selectedSite && detailsChanged && updateLocationRecord ? siteRecord : undefined,
     });
   }
 
@@ -214,8 +224,13 @@ export function StayModal({ sites, initialSite, onClose, onSave }: StayModalProp
               <label className="field"><span>Site</span><input value={siteNumber} onChange={(event) => setSiteNumber(event.target.value)} placeholder="55" required /></label>
               <label className="field"><span>Campsite notes</span><input value={siteNotes} onChange={(event) => setSiteNotes(event.target.value)} placeholder="Lake side, full hookups…" /></label>
             </div>
-            {selectedSite && locationChanged && (
-              <label className="update-location-check"><input type="checkbox" checked={updateLocationRecord} onChange={(event) => setUpdateLocationRecord(event.target.checked)} /> Update the campsite record with these Park / Area / Loop / Site or map changes</label>
+          </section>
+
+          <section className="form-section">
+            <div className="section-heading-row"><div><h3>Hookups and site setup</h3><p>{selectedSite ? 'Previous amenities are prefilled. Update them when the permanent campsite information has changed.' : 'These details will become the starting profile for the new campsite.'}</p></div></div>
+            <AmenityCards value={amenities} onChange={setAmenities} />
+            {selectedSite && detailsChanged && (
+              <label className="update-location-check"><input type="checkbox" checked={updateLocationRecord} onChange={(event) => setUpdateLocationRecord(event.target.checked)} /> Update the campsite record with these location, amenity, note, or map changes</label>
             )}
           </section>
 
