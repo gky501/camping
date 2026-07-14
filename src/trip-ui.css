@@ -44,6 +44,8 @@
 .destructive-text-button:hover { color: #7e2622; }
 .trip-detail-actions { align-items: center; }
 .modal-action-spacer { flex: 1; }
+.map-popup-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }
+.map-popup-actions .destructive-text-button { display: inline-flex; align-items: center; gap: 6px; margin-left: 0; }
 
 @media (max-width: 820px) {
   .diary-summary-grid { grid-template-columns: 1fr 1fr 1fr; }
