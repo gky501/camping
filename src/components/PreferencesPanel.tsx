@@ -1,21 +1,39 @@
 import { useEffect, useState } from 'react';
-import { Copy, Save, SlidersHorizontal } from 'lucide-react';
+import { Copy, Save, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { CRITERIA, MONTHS, type PreferenceProfile } from '../types';
 
-export function PreferencesPanel({ profile, onSave, onDuplicate }: {
+export function PreferencesPanel({ profile, canDelete, onSave, onDuplicate, onDelete }: {
   profile: PreferenceProfile;
+  canDelete: boolean;
   onSave: (profile: PreferenceProfile) => void;
   onDuplicate: (profile: PreferenceProfile) => void;
+  onDelete: (profile: PreferenceProfile) => void;
 }) {
   const [draft, setDraft] = useState(profile);
   useEffect(() => setDraft(profile), [profile]);
 
+  const cleanName = draft.name.trim();
+
   return (
     <section className="content-page">
-      <div className="page-heading">
-        <div><p className="eyebrow">Personalized ranking</p><h2>{draft.name}</h2><p>These settings change the match score and map colors without changing any campsite’s original observations.</p></div>
-        <div className="button-row"><button className="secondary-button" onClick={() => onDuplicate(draft)}><Copy size={17} /> Duplicate profile</button><button className="primary-button" onClick={() => onSave(draft)}><Save size={17} /> Save changes</button></div>
+      <div className="page-heading profile-page-heading">
+        <div>
+          <p className="eyebrow">Personalized ranking</p>
+          <h2>Preference profile</h2>
+          <p>Rename, duplicate, or remove profiles. Each profile changes the scores and map colors without changing campsite observations.</p>
+        </div>
+        <div className="button-row">
+          <button className="secondary-button" onClick={() => onDuplicate(draft)}><Copy size={17} /> Duplicate</button>
+          <button className="danger-button" disabled={!canDelete} title={canDelete ? 'Delete this profile' : 'At least one profile is required'} onClick={() => onDelete(draft)}><Trash2 size={17} /> Delete</button>
+          <button className="primary-button" disabled={!cleanName} onClick={() => onSave({ ...draft, name: cleanName })}><Save size={17} /> Save changes</button>
+        </div>
       </div>
+
+      <label className="profile-name-card">
+        <span>Profile name</span>
+        <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} placeholder="Profile name" />
+      </label>
+
       <div className="preference-columns">
         <div className="settings-card">
           <div className="settings-heading"><SlidersHorizontal /><div><h3>Site priorities</h3><p>0 ignores the area. 5 makes it essential to the calculated score.</p></div></div>
