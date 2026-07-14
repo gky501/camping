@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Eye, Moon, Pencil, Plus, Search, CalendarDays } from 'lucide-react';
+import { BookOpen, CalendarDays, Eye, Moon, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { formatDateRange } from '../lib/dates';
 import { sortDiaryStays, tripStatus } from '../lib/trips';
 import type { CamperProfile, Campsite, Stay } from '../types';
 import { StayDetailModal } from './StayDetailModal';
 import { TripMetaPills, TripStatusPill } from './TripPills';
 
-export function DiaryPanel({ sites, stays, campers, onAdd, onEdit }: {
+export function DiaryPanel({ sites, stays, campers, onAdd, onEdit, onDelete }: {
   sites: Campsite[];
   stays: Stay[];
   campers: CamperProfile[];
   onAdd: () => void;
   onEdit: (stay: Stay) => void;
+  onDelete: (stay: Stay) => void;
 }) {
   const [search, setSearch] = useState('');
   const [selectedStay, setSelectedStay] = useState<Stay>();
@@ -29,6 +30,7 @@ export function DiaryPanel({ sites, stays, campers, onAdd, onEdit }: {
   const completed = stays.filter((stay) => tripStatus(stay) === 'completed');
   const upcoming = stays.filter((stay) => tripStatus(stay) !== 'completed');
   function editStay(stay: Stay) { setSelectedStay(undefined); onEdit(stay); }
+  function deleteStay(stay: Stay) { setSelectedStay(undefined); onDelete(stay); }
 
   return (
     <section className="content-page">
@@ -57,14 +59,18 @@ export function DiaryPanel({ sites, stays, campers, onAdd, onEdit }: {
                   <div className="timeline-title"><div><h3>{location?.park ?? 'Unknown campsite'}</h3><p>{locationLine}</p></div><span className="night-pill"><Moon size={15} /> {stay.nights}</span></div>
                   {stay.journal && <p className="timeline-journal">{stay.journal}</p>}
                   <TripMetaPills stay={stay} camper={camper} />
-                  <div className="button-row diary-entry-actions"><button type="button" className="text-button view-stay-button" onClick={() => setSelectedStay(stay)}><Eye size={16} /> View full {status === 'upcoming' ? 'plan' : 'stay'}</button><button type="button" className="text-button" onClick={() => editStay(stay)}><Pencil size={16} /> Edit</button></div>
+                  <div className="button-row diary-entry-actions">
+                    <button type="button" className="text-button view-stay-button" onClick={() => setSelectedStay(stay)}><Eye size={16} /> View full {status === 'upcoming' ? 'plan' : 'stay'}</button>
+                    <button type="button" className="text-button" onClick={() => editStay(stay)}><Pencil size={16} /> Edit</button>
+                    <button type="button" className="text-button destructive-text-button" onClick={() => deleteStay(stay)}><Trash2 size={16} /> Delete</button>
+                  </div>
                 </div>
               </article>
             );
           })}
         </div>
       )}
-      {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} camper={campers.find((camper) => camper.id === selectedStay.camperId)} onEdit={() => editStay(selectedStay)} onClose={() => setSelectedStay(undefined)} />}
+      {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} camper={campers.find((camper) => camper.id === selectedStay.camperId)} onEdit={() => editStay(selectedStay)} onDelete={() => deleteStay(selectedStay)} onClose={() => setSelectedStay(undefined)} />}
     </section>
   );
 }
