@@ -169,9 +169,38 @@ async function saveProfile(db: D1Database, id: string, body: JsonObject) {
   return json({ ok: true });
 }
 
+async function deleteProfile(db: D1Database, id: string) {
+  const countRow = await db.prepare('SELECT COUNT(*) AS count FROM preference_profiles').first<{ count: number }>();
+  if (Number(countRow?.count ?? 0) <= 1) return error('At least one preference profile is required.', 409);
+  const result = await db.prepare('DELETE FROM preference_profiles WHERE id=?').bind(id).run();
+  if (!result.meta.changes) return error('Preference profile not found.', 404);
+  return json({ ok: true });
+}
+
+async function createSite(db: D1Database, body: JsonObject) {
+  const id = String(body.id || crypto.randomUUID());
+  const park = String(body.park || '').trim();
+  const state = String(body.state || '').trim() || 'Unknown';
+  const loop = String(body.loop || '').trim();
+  const siteNumber = String(body.siteNumber || '').trim();
+  const latitude = Number(body.latitude);
+  const longitude = Number(body.longitude);
+  if (!park || !siteNumber || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return error('Campground, site number, latitude, and longitude are required.');
+  }
+  await db.prepare(`INSERT INTO sites (id,park,state,loop,site_number,latitude,longitude,notes,view_types_json,legacy_stay_count,imported_rating,favorite,status)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
+      id, park, state, loop, siteNumber, latitude, longitude, String(body.notes || ''),
+      JSON.stringify(body.viewTypes ?? []), Number(body.legacyStayCount || 0),
+      body.importedRating === undefined ? null : Number(body.importedRating),
+      body.favorite ? 1 : 0, String(body.status || 'wishlist'),
+    ).run();
+  return json({ ok: true, id }, 201);
+}
+
 async function saveSite(db: D1Database, id: string, body: JsonObject) {
   await db.prepare(`UPDATE sites SET park=?,state=?,loop=?,site_number=?,latitude=?,longitude=?,notes=?,view_types_json=?,favorite=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .bind(body.park, body.state, body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'saved', id).run();
+    .bind(body.park, body.state, body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'wishlist', id).run();
   return json({ ok: true });
 }
 
@@ -184,6 +213,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     if (method === 'GET' && path[0] === 'bootstrap') return json(await bootstrap(context.env.DB));
     if (method === 'POST' && path[0] === 'stays') return await saveStay(context.env.DB, await context.request.json<JsonObject>());
     if (method === 'PATCH' && path[0] === 'profiles' && path[1]) return await saveProfile(context.env.DB, path[1], await context.request.json<JsonObject>());
+    if (method === 'DELETE' && path[0] === 'profiles' && path[1]) return await deleteProfile(context.env.DB, path[1]);
+    if (method === 'POST' && path[0] === 'sites' && !path[1]) return await createSite(context.env.DB, await context.request.json<JsonObject>());
     if (method === 'PATCH' && path[0] === 'sites' && path[1]) return await saveSite(context.env.DB, path[1], await context.request.json<JsonObject>());
     if (method === 'GET' && path[0] === 'export') return json(await bootstrap(context.env.DB));
     return error('Not found', 404);
