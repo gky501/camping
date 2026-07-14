@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
-import { Bookmark, Search, SlidersHorizontal } from 'lucide-react';
+import { Bookmark, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
 import type { Campsite, PreferenceProfile, Stay } from '../types';
 import { calculateOverall, formatScore, scoreClass } from '../lib/scoring';
 import { SiteCard } from './SiteCard';
@@ -63,6 +63,29 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
       });
   }, [minimumScore, profile, search, sites, statusFilter]);
 
+  async function deleteOrphanSite(site: Campsite) {
+    const tripCount = stays.filter((stay) => stay.siteId === site.id).length;
+    if (tripCount > 0) {
+      window.alert('This campsite still has a trip attached. Delete the trip from the Diary first.');
+      return;
+    }
+
+    const label = [site.park, site.area, site.loop ? `Loop ${site.loop}` : '', `Site ${site.siteNumber}`]
+      .filter(Boolean)
+      .join(' · ');
+
+    if (!window.confirm(`Delete ${label} and remove its map marker? This cannot be undone.`)) return;
+
+    try {
+      const response = await fetch(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' });
+      const result = await response.json().catch(() => ({})) as { error?: string };
+      if (!response.ok) throw new Error(result.error || `Delete failed with status ${response.status}.`);
+      window.location.reload();
+    } catch (cause) {
+      window.alert(cause instanceof Error ? cause.message : 'Unable to delete this campsite.');
+    }
+  }
+
   return (
     <section className="map-layout">
       <aside className="map-sidebar">
@@ -103,6 +126,7 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
           {filtered.map((site) => {
             const score = calculateOverall(site, profile);
             const isWishlist = site.status === 'wishlist';
+            const hasTrips = stays.some((stay) => stay.siteId === site.id);
             return (
               <Marker
                 key={site.id}
@@ -121,7 +145,14 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
                       <div className="popup-score"><span>Your match</span><strong>{formatScore(score)}</strong></div>
                     )}
                     <p>{site.notes || (isWishlist ? 'Saved to try later.' : 'No notes yet.')}</p>
-                    <button className="primary-button small" onClick={() => onLogStay(site)}>{isWishlist ? 'Log first stay' : 'Log another stay'}</button>
+                    <div className="map-popup-actions">
+                      <button className="primary-button small" onClick={() => onLogStay(site)}>{isWishlist ? 'Log first stay' : 'Log another stay'}</button>
+                      {!hasTrips && (
+                        <button className="text-button destructive-text-button small" onClick={() => void deleteOrphanSite(site)}>
+                          <Trash2 size={15} /> Delete campsite
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </Popup>
               </Marker>
