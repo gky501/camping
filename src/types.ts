@@ -86,9 +86,28 @@ export interface WishlistSiteDraft extends SiteLocation {
   amenities: SiteAmenities;
 }
 
+export type CamperType = 'travel-trailer' | 'fifth-wheel' | 'motorhome' | 'popup' | 'truck-camper' | 'van' | 'tent' | 'other';
+
+export interface CamperProfile {
+  id: string;
+  name: string;
+  type: CamperType;
+  year?: number;
+  make?: string;
+  model?: string;
+  lengthFeet?: number;
+  sleeps?: number;
+  slideOuts?: number;
+  dryWeightLbs?: number;
+  gvwrLbs?: number;
+  tentStyle?: string;
+  notes: string;
+}
+
 export interface Stay {
   id: string;
   siteId: string;
+  camperId?: string;
   siteSnapshot?: SiteSnapshot;
   arrivalDate: string;
   departureDate: string;
@@ -124,6 +143,7 @@ export interface AppState {
   stays: Stay[];
   profiles: PreferenceProfile[];
   parks?: ParkProfile[];
+  campers?: CamperProfile[];
 }
 
 export interface StayDraft extends Omit<Stay, 'id' | 'createdAt' | 'siteSnapshot'> {
