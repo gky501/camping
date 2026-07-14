@@ -11,7 +11,7 @@ import { PreferencesPanel } from './components/PreferencesPanel';
 import { StayModal } from './components/StayModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createCamperRemote, createSiteRemote, createStayRemote, deleteCamperRemote, deleteProfileRemote, deleteSiteRemote, loadAppState, persistLocal, saveCamperRemote, saveParkRemote, saveProfileRemote, saveSiteRemote, updateStayRemote } from './lib/api';
+import { createCamperRemote, createSiteRemote, createStayRemote, deleteCamperRemote, deleteProfileRemote, deleteSiteRemote, deleteStayRemote, loadAppState, persistLocal, saveCamperRemote, saveParkRemote, saveProfileRemote, saveSiteRemote, updateStayRemote } from './lib/api';
 import { createId } from './lib/id';
 import { mergeParkProfiles, renameParkRecords } from './lib/parks';
 import type { AppState, CamperProfile, Campsite, ParkProfile, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
@@ -105,6 +105,29 @@ export default function App() {
     })().catch(() => setMode('local'));
   }
 
+  function deleteStay(stay: Stay) {
+    if (!state) return;
+    const site = state.sites.find((item) => item.id === stay.siteId);
+    const location = stay.siteSnapshot ?? site;
+    const label = [location?.park, location?.area, location?.loop ? `Loop ${location.loop}` : '', location?.siteNumber ? `Site ${location.siteNumber}` : ''].filter(Boolean).join(' · ');
+    if (!window.confirm(`Delete this diary entry${label ? ` for ${label}` : ''}? This cannot be undone.`)) return;
+
+    const otherSiteStays = state.stays.filter((item) => item.id !== stay.id && item.siteId === stay.siteId);
+    let deleteOrphanSite = false;
+    if (site && otherSiteStays.length === 0) {
+      deleteOrphanSite = window.confirm(`This is the only trip connected to this campsite.\n\nSelect OK to also delete the campsite and its map marker.\nSelect Cancel to keep it as a gray wish-list site.`);
+    }
+
+    const nextStays = state.stays.filter((item) => item.id !== stay.id);
+    const nextSites = deleteOrphanSite
+      ? state.sites.filter((item) => item.id !== stay.siteId)
+      : state.sites.map((item) => item.id === stay.siteId && otherSiteStays.length === 0 ? { ...item, status: 'wishlist' as const } : item);
+    const nextParks = mergeParkProfiles(state.parks, nextSites, nextStays);
+    setState({ ...state, sites: nextSites, stays: nextStays, parks: nextParks });
+    if (deleteOrphanSite && selectedSiteId === stay.siteId) setSelectedSiteId(undefined);
+    deleteStayRemote(stay.id, deleteOrphanSite).catch(() => setMode('local'));
+  }
+
   function openCamper(camper?: CamperProfile) { setCamperToEdit(camper); setShowCamperModal(true); }
   function saveCamper(camper: CamperProfile) {
     if (!state) return;
@@ -187,7 +210,7 @@ export default function App() {
 
       <main className="app-main">
         {tab === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} />}
-        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} />}
+        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} onDelete={deleteStay} />}
         {tab === 'parks' && <ParksPanel parks={state.parks ?? []} sites={state.sites} stays={state.stays} profile={activeProfile} onEdit={setParkToEdit} onSelectSite={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} />}
         {tab === 'campers' && <CampersPanel campers={state.campers ?? []} stays={state.stays} sites={state.sites} onAdd={() => openCamper()} onEdit={openCamper} onDelete={deleteCamper} />}
         {tab === 'wishlist' && <WishlistPanel sites={state.sites} stays={state.stays} profile={activeProfile} onSelect={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} onAdd={() => openWishlist()} onEdit={openWishlist} onDelete={deleteWishlistSite} />}
