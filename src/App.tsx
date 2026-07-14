@@ -7,7 +7,7 @@ import { PreferencesPanel } from './components/PreferencesPanel';
 import { StayModal } from './components/StayModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createSiteRemote, createStayRemote, deleteProfileRemote, loadAppState, persistLocal, saveProfileRemote, saveSiteRemote } from './lib/api';
+import { createSiteRemote, createStayRemote, deleteProfileRemote, deleteSiteRemote, loadAppState, persistLocal, saveProfileRemote, saveSiteRemote } from './lib/api';
 import { createId } from './lib/id';
 import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
 
@@ -30,6 +30,7 @@ export default function App() {
   const [staySite, setStaySite] = useState<Campsite | undefined>();
   const [showStayModal, setShowStayModal] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
+  const [wishlistSite, setWishlistSite] = useState<Campsite | undefined>();
 
   useEffect(() => {
     loadAppState().then(({ state: loaded, mode: loadedMode }) => {
@@ -101,8 +102,25 @@ export default function App() {
     })().catch(() => setMode('local'));
   }
 
+  function openWishlist(site?: Campsite) {
+    setWishlistSite(site);
+    setShowWishlistModal(true);
+  }
+
   function saveWishlistSite(draft: WishlistSiteDraft) {
     if (!state) return;
+
+    if (wishlistSite) {
+      const updated: Campsite = { ...wishlistSite, ...draft, status: 'wishlist' };
+      setState({ ...state, sites: state.sites.map((site) => site.id === updated.id ? updated : site) });
+      setSelectedSiteId(updated.id);
+      setWishlistSite(undefined);
+      setShowWishlistModal(false);
+      setTab('wishlist');
+      saveSiteRemote(updated).catch(() => setMode('local'));
+      return;
+    }
+
     const site: Campsite = {
       id: createId('site'),
       ...draft,
@@ -115,9 +133,19 @@ export default function App() {
     };
     setState({ ...state, sites: [...state.sites, site] });
     setSelectedSiteId(site.id);
+    setWishlistSite(undefined);
     setShowWishlistModal(false);
     setTab('wishlist');
     createSiteRemote(site).catch(() => setMode('local'));
+  }
+
+  function deleteWishlistSite(site: Campsite) {
+    if (!state) return;
+    const label = [site.park, site.area, site.loop, `Site ${site.siteNumber}`].filter(Boolean).join(' · ');
+    if (!window.confirm(`Delete ${label} from the wish list?`)) return;
+    setState({ ...state, sites: state.sites.filter((item) => item.id !== site.id) });
+    if (selectedSiteId === site.id) setSelectedSiteId(undefined);
+    deleteSiteRemote(site.id).catch(() => setMode('local'));
   }
 
   function saveProfile(profile: PreferenceProfile) {
@@ -199,7 +227,9 @@ export default function App() {
             profile={activeProfile}
             onSelect={(site) => { selectSite(site); setTab('map'); }}
             onLogStay={openStay}
-            onAdd={() => setShowWishlistModal(true)}
+            onAdd={() => openWishlist()}
+            onEdit={openWishlist}
+            onDelete={deleteWishlistSite}
           />
         )}
         {tab === 'sites' && (
@@ -221,7 +251,7 @@ export default function App() {
       </nav>
 
       {showStayModal && <StayModal sites={state.sites} initialSite={staySite} onClose={() => setShowStayModal(false)} onSave={saveStay} />}
-      {showWishlistModal && <WishlistModal onClose={() => setShowWishlistModal(false)} onSave={saveWishlistSite} />}
+      {showWishlistModal && <WishlistModal site={wishlistSite} onClose={() => { setShowWishlistModal(false); setWishlistSite(undefined); }} onSave={saveWishlistSite} />}
     </div>
   );
 }
