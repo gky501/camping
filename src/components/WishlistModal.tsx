@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Crosshair, MapPinned, X } from 'lucide-react';
-import type { Campsite, WishlistSiteDraft } from '../types';
+import type { Campsite, SiteAmenities, WishlistSiteDraft } from '../types';
+import { AmenityCards } from './AmenityCards';
 import { SiteLocationPicker } from './SiteLocationPicker';
 
 export function WishlistModal({ site, onClose, onSave }: {
@@ -17,6 +18,7 @@ export function WishlistModal({ site, onClose, onSave }: {
   const [latitude, setLatitude] = useState(site ? String(site.latitude) : '');
   const [longitude, setLongitude] = useState(site ? String(site.longitude) : '');
   const [notes, setNotes] = useState(site?.notes ?? '');
+  const [amenities, setAmenities] = useState<SiteAmenities>(site?.amenities ?? { features: [] });
   const [locationMessage, setLocationMessage] = useState('');
 
   const latitudeNumber = Number(latitude);
@@ -53,6 +55,7 @@ export function WishlistModal({ site, onClose, onSave }: {
       latitude: latitudeNumber,
       longitude: longitudeNumber,
       notes: notes.trim(),
+      amenities,
     });
   }
 
@@ -74,6 +77,12 @@ export function WishlistModal({ site, onClose, onSave }: {
               <label className="field"><span>Site</span><input value={siteNumber} onChange={(event) => setSiteNumber(event.target.value)} placeholder="55" required /></label>
             </div>
           </section>
+
+          <section className="form-section">
+            <div className="section-heading-row"><div><h3>Hookups and site setup</h3><p>Select only what you know. These details will carry forward when you log a stay.</p></div></div>
+            <AmenityCards value={amenities} onChange={setAmenities} />
+          </section>
+
           <section className="form-section">
             <div className="section-heading-row"><div><h3>Map location</h3><p>Click the exact location, use your current position, or enter coordinates.</p></div><button type="button" className="secondary-button" onClick={useCurrentLocation}><Crosshair size={17} /> Use my location</button></div>
             {locationMessage && <p className="form-help">{locationMessage}</p>}
