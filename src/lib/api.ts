@@ -75,6 +75,10 @@ function stayPayload(draft: StayDraft, stay: Stay) {
 
 export async function createStayRemote(draft: StayDraft, stay: Stay): Promise<void> { await request('/api/stays', { method: 'POST', body: JSON.stringify(stayPayload(draft, stay)) }); }
 export async function updateStayRemote(draft: StayDraft, stay: Stay): Promise<void> { await request(`/api/stays/${encodeURIComponent(stay.id)}`, { method: 'PATCH', body: JSON.stringify(stayPayload(draft, stay)) }); }
+export async function deleteStayRemote(stayId: string, deleteOrphanSite: boolean): Promise<void> {
+  const query = deleteOrphanSite ? '?deleteOrphanSite=true' : '';
+  await request(`/api/stays/${encodeURIComponent(stayId)}${query}`, { method: 'DELETE' });
+}
 
 export async function createCamperRemote(camper: CamperProfile): Promise<void> { await request('/api/campers', { method: 'POST', body: JSON.stringify(camper) }); }
 export async function saveCamperRemote(camper: CamperProfile): Promise<void> { await request(`/api/campers/${encodeURIComponent(camper.id)}`, { method: 'PATCH', body: JSON.stringify(camper) }); }
