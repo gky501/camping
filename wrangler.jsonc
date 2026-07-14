@@ -2,5 +2,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "campsite-diary",
   "pages_build_output_dir": "./dist",
-  "compatibility_date": "2026-07-14"
+  "compatibility_date": "2026-07-14",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "camp-ledger",
+      "database_id": "d1f84f73-495d-4247-a3c3-e4b2f829e152"
+    }
+  ]
 }
