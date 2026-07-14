@@ -7,7 +7,7 @@ import { PreferencesPanel } from './components/PreferencesPanel';
 import { StayModal } from './components/StayModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createSiteRemote, createStayRemote, deleteProfileRemote, deleteSiteRemote, loadAppState, persistLocal, saveProfileRemote, saveSiteRemote } from './lib/api';
+import { createSiteRemote, createStayRemote, deleteProfileRemote, deleteSiteRemote, loadAppState, persistLocal, saveProfileRemote, saveSiteRemote, updateStayRemote } from './lib/api';
 import { createId } from './lib/id';
 import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
 
@@ -28,6 +28,7 @@ export default function App() {
   const [activeProfileId, setActiveProfileId] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>();
   const [staySite, setStaySite] = useState<Campsite | undefined>();
+  const [editingStay, setEditingStay] = useState<Stay | undefined>();
   const [showStayModal, setShowStayModal] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [wishlistSite, setWishlistSite] = useState<Campsite | undefined>();
@@ -50,8 +51,21 @@ export default function App() {
   );
 
   function openStay(site?: Campsite) {
+    setEditingStay(undefined);
     setStaySite(site);
     setShowStayModal(true);
+  }
+
+  function openEditStay(stay: Stay) {
+    setEditingStay(stay);
+    setStaySite(state?.sites.find((site) => site.id === stay.siteId));
+    setShowStayModal(true);
+  }
+
+  function closeStayModal() {
+    setShowStayModal(false);
+    setStaySite(undefined);
+    setEditingStay(undefined);
   }
 
   function selectSite(site: Campsite) {
@@ -61,7 +75,7 @@ export default function App() {
   function saveStay(draft: StayDraft) {
     if (!state) return;
     const stay: Stay = {
-      id: createId('stay'),
+      id: editingStay?.id ?? createId('stay'),
       siteId: draft.siteId,
       siteSnapshot: draft.siteSnapshot,
       arrivalDate: draft.arrivalDate,
@@ -72,7 +86,7 @@ export default function App() {
       weather: draft.weather,
       wouldReturn: draft.wouldReturn,
       observations: draft.observations,
-      createdAt: new Date().toISOString(),
+      createdAt: editingStay?.createdAt ?? new Date().toISOString(),
     };
 
     let workingSites = draft.createSite ? [...state.sites, draft.createSite] : [...state.sites];
@@ -91,14 +105,19 @@ export default function App() {
       return { ...site, currentFacts, status: 'visited' as const };
     });
 
-    setState({ ...state, sites: nextSites, stays: [...state.stays, stay] });
-    setShowStayModal(false);
+    const nextStays = editingStay
+      ? state.stays.map((item) => item.id === editingStay.id ? stay : item)
+      : [...state.stays, stay];
+
+    setState({ ...state, sites: nextSites, stays: nextStays });
+    closeStayModal();
     setTab('diary');
 
     void (async () => {
       if (draft.createSite) await createSiteRemote({ ...draft.createSite, status: 'visited' });
       else if (draft.updateSiteDetails) await saveSiteRemote({ ...draft.updateSiteDetails, status: 'visited' });
-      await createStayRemote(draft, stay);
+      if (editingStay) await updateStayRemote(draft, stay);
+      else await createStayRemote(draft, stay);
     })().catch(() => setMode('local'));
   }
 
@@ -219,7 +238,7 @@ export default function App() {
             onLogStay={openStay}
           />
         )}
-        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} onAdd={() => openStay()} />}
+        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} onAdd={() => openStay()} onEdit={openEditStay} />}
         {tab === 'wishlist' && (
           <WishlistPanel
             sites={state.sites}
@@ -250,7 +269,7 @@ export default function App() {
         ))}
       </nav>
 
-      {showStayModal && <StayModal sites={state.sites} initialSite={staySite} onClose={() => setShowStayModal(false)} onSave={saveStay} />}
+      {showStayModal && <StayModal sites={state.sites} initialSite={staySite} initialStay={editingStay} onClose={closeStayModal} onSave={saveStay} />}
       {showWishlistModal && <WishlistModal site={wishlistSite} onClose={() => { setShowWishlistModal(false); setWishlistSite(undefined); }} onSave={saveWishlistSite} />}
     </div>
   );
