@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, CalendarDays, Eye, Moon, Plus, Search } from 'lucide-react';
+import { BookOpen, Eye, Moon, Plus, Search } from 'lucide-react';
 import { formatDateRange } from '../lib/dates';
 import type { Campsite, Stay } from '../types';
 import { StayDetailModal } from './StayDetailModal';
@@ -18,7 +18,6 @@ export function DiaryPanel({ sites, stays, onAdd }: { sites: Campsite[]; stays: 
       })
       .sort((a, b) => b.arrivalDate.localeCompare(a.arrivalDate));
   }, [search, sites, stays]);
-  const legacyStays = sites.reduce((sum, site) => sum + site.legacyStayCount, 0);
 
   return (
     <section className="content-page">
@@ -26,14 +25,13 @@ export function DiaryPanel({ sites, stays, onAdd }: { sites: Campsite[]; stays: 
         <div><p className="eyebrow">Trip history</p><h2>Camping diary</h2><p>Open any dated stay to review the campsite, exact location, ratings, cost, weather, and notes from that trip.</p></div>
         <button className="primary-button" onClick={onAdd}><Plus size={18} /> Log a stay</button>
       </div>
-      <div className="summary-grid">
+      <div className="summary-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
         <div className="summary-card"><BookOpen /><div><strong>{stays.length}</strong><span>Dated diary entries</span></div></div>
         <div className="summary-card"><Moon /><div><strong>{stays.reduce((sum, stay) => sum + stay.nights, 0)}</strong><span>Dated nights</span></div></div>
-        <div className="summary-card"><CalendarDays /><div><strong>{legacyStays}</strong><span>Imported stays without dates</span></div></div>
       </div>
       <label className="search-field page-search"><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search park, area, loop, site, weather, or notes" /></label>
       {sorted.length === 0 ? (
-        <div className="empty-state"><BookOpen size={42} /><h3>{stays.length ? 'No stays match that search.' : 'Your campsite list is imported.'}</h3><p>{stays.length ? 'Try a different park, site number, or note.' : 'Log the next stay with arrival and departure dates. Existing physical ratings will be prefilled automatically.'}</p>{!stays.length && <button className="primary-button" onClick={onAdd}>Create the first dated entry</button>}</div>
+        <div className="empty-state"><BookOpen size={42} /><h3>{stays.length ? 'No stays match that search.' : 'Your diary is ready.'}</h3><p>{stays.length ? 'Try a different park, site number, or note.' : 'Log the next stay with arrival and departure dates. Existing physical ratings will be prefilled automatically.'}</p>{!stays.length && <button className="primary-button" onClick={onAdd}>Create the first dated entry</button>}</div>
       ) : (
         <div className="timeline">
           {sorted.map((stay) => {
