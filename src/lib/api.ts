@@ -1,7 +1,7 @@
 import { seedState } from '../data/seed';
 import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft } from '../types';
 
-const STORAGE_KEY = 'camp-ledger-state-v1';
+const STORAGE_KEY = 'camp-ledger-state-v2-wishlist-only';
 
 function normalizeState(state: AppState): AppState {
   return {
@@ -22,7 +22,12 @@ function normalizeState(state: AppState): AppState {
 }
 
 function cloneSeed(): AppState {
-  return normalizeState(structuredClone(seedState));
+  const cloned = normalizeState(structuredClone(seedState));
+  return {
+    ...cloned,
+    sites: cloned.sites.filter((site) => site.status === 'wishlist'),
+    stays: [],
+  };
 }
 
 function readLocal(): AppState | null {
@@ -108,4 +113,8 @@ export async function saveSiteRemote(site: Campsite): Promise<void> {
     method: 'PATCH',
     body: JSON.stringify(site),
   });
+}
+
+export async function deleteSiteRemote(siteId: string): Promise<void> {
+  await request(`/api/sites/${encodeURIComponent(siteId)}`, { method: 'DELETE' });
 }
