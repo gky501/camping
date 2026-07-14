@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin, Moon, Pencil, TentTree, X } from 'lucide-react';
+import { CalendarDays, MapPin, Moon, Pencil, TentTree, Trash2, X } from 'lucide-react';
 import { summarizeAmenities } from '../lib/amenities';
 import { camperSubtitle, camperTypeLabel } from '../lib/campers';
 import { formatDateRange } from '../lib/dates';
@@ -7,11 +7,12 @@ import { CRITERIA, type CamperProfile, type Campsite, type Stay } from '../types
 import { SiteLocationPicker } from './SiteLocationPicker';
 import { TripMetaPills, TripStatusPill } from './TripPills';
 
-export function StayDetailModal({ stay, site, camper, onEdit, onClose }: {
+export function StayDetailModal({ stay, site, camper, onEdit, onDelete, onClose }: {
   stay: Stay;
   site?: Campsite;
   camper?: CamperProfile;
   onEdit: () => void;
+  onDelete: () => void;
   onClose: () => void;
 }) {
   const location = stay.siteSnapshot ?? site;
@@ -40,7 +41,7 @@ export function StayDetailModal({ stay, site, camper, onEdit, onClose }: {
         {(observed.length > 0 || status !== 'upcoming') && <section className="form-section"><h3>What the site was like</h3>{observed.length ? <div className="stay-rating-grid">{observed.map((criterion) => <div key={criterion.key}><span>{criterion.label}</span><strong>{stay.observations[criterion.key]}/5</strong></div>)}</div> : <p className="form-help">No ratings were recorded for this stay.</p>}</section>}
 
         <section className="form-section"><h3>{status === 'upcoming' ? 'Planning notes' : 'Diary notes'}</h3><p className="diary-notes">{stay.journal || (status === 'upcoming' ? 'No planning notes have been added yet.' : 'No notes were added to this stay.')}</p></section>
-        <div className="modal-actions"><button type="button" className="secondary-button" onClick={onEdit}><Pencil size={16} /> Edit {status === 'upcoming' ? 'plan' : 'stay'}</button><button type="button" className="primary-button" onClick={onClose}>Done</button></div>
+        <div className="modal-actions trip-detail-actions"><button type="button" className="danger-button" onClick={onDelete}><Trash2 size={16} /> Delete {status === 'upcoming' ? 'plan' : 'stay'}</button><span className="modal-action-spacer" /><button type="button" className="secondary-button" onClick={onEdit}><Pencil size={16} /> Edit {status === 'upcoming' ? 'plan' : 'stay'}</button><button type="button" className="primary-button" onClick={onClose}>Done</button></div>
       </div>
     </div>
   );
