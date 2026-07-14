@@ -1,4 +1,5 @@
 import { CalendarDays, MapPin, Moon, X } from 'lucide-react';
+import { summarizeAmenities } from '../lib/amenities';
 import { formatDateRange } from '../lib/dates';
 import { CRITERIA, type Campsite, type Stay } from '../types';
 import { SiteLocationPicker } from './SiteLocationPicker';
@@ -7,6 +8,7 @@ export function StayDetailModal({ stay, site, onClose }: { stay: Stay; site?: Ca
   const location = stay.siteSnapshot ?? site;
   const locationLine = [location?.area, location?.loop ? `Loop ${location.loop}` : '', location?.siteNumber ? `Site ${location.siteNumber}` : ''].filter(Boolean).join(' · ');
   const observed = CRITERIA.filter((criterion) => stay.observations[criterion.key] !== undefined);
+  const amenities = summarizeAmenities(stay.siteSnapshot?.amenities ?? site?.amenities);
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -27,6 +29,12 @@ export function StayDetailModal({ stay, site, onClose }: { stay: Stay; site?: Ca
             {stay.wouldReturn !== undefined && <span className="chip">{stay.wouldReturn ? 'Would book again' : 'Would not book again'}</span>}
           </div>
         </section>
+        {amenities.length > 0 && (
+          <section className="form-section">
+            <h3>Hookups and site setup</h3>
+            <div className="chip-row amenity-detail-chips">{amenities.map((amenity) => <span className="chip amenity-chip" key={amenity}>{amenity}</span>)}</div>
+          </section>
+        )}
         {location && (
           <section className="form-section">
             <div className="section-heading-row"><div><h3>Location used for this stay</h3><p>The diary keeps the place connected to this trip.</p></div><MapPin size={22} /></div>
