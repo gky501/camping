@@ -1,19 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BookOpen, Bookmark, Cloud, CloudOff, Map, Plus, Settings2, TentTree } from 'lucide-react';
+import { BookOpen, Bookmark, Cloud, CloudOff, Map, Plus, Settings2, TentTree, Trees } from 'lucide-react';
 import { CampsitesPanel } from './components/CampsitesPanel';
 import { DiaryPanel } from './components/DiaryPanel';
 import { MapPanel } from './components/MapPanel';
+import { ParkEditModal } from './components/ParkEditModal';
+import { ParksPanel } from './components/ParksPanel';
 import { PreferencesPanel } from './components/PreferencesPanel';
 import { StayModal } from './components/StayModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createSiteRemote, createStayRemote, deleteProfileRemote, deleteSiteRemote, loadAppState, persistLocal, saveProfileRemote, saveSiteRemote, updateStayRemote } from './lib/api';
+import { createSiteRemote, createStayRemote, deleteProfileRemote, deleteSiteRemote, loadAppState, persistLocal, saveParkRemote, saveProfileRemote, saveSiteRemote, updateStayRemote } from './lib/api';
 import { createId } from './lib/id';
-import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
+import { mergeParkProfiles, renameParkRecords } from './lib/parks';
+import type { AppState, Campsite, ParkProfile, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
 
 const tabs = [
   { id: 'map', label: 'Map', icon: Map },
   { id: 'diary', label: 'Diary', icon: BookOpen },
+  { id: 'parks', label: 'Parks', icon: Trees },
   { id: 'wishlist', label: 'Wish list', icon: Bookmark },
   { id: 'sites', label: 'Campsites', icon: TentTree },
   { id: 'preferences', label: 'Preferences', icon: Settings2 },
@@ -32,6 +36,7 @@ export default function App() {
   const [showStayModal, setShowStayModal] = useState(false);
   const [showWishlistModal, setShowWishlistModal] = useState(false);
   const [wishlistSite, setWishlistSite] = useState<Campsite | undefined>();
+  const [parkToEdit, setParkToEdit] = useState<ParkProfile | undefined>();
 
   useEffect(() => {
     loadAppState().then(({ state: loaded, mode: loadedMode }) => {
@@ -108,8 +113,9 @@ export default function App() {
     const nextStays = editingStay
       ? state.stays.map((item) => item.id === editingStay.id ? stay : item)
       : [...state.stays, stay];
+    const nextParks = mergeParkProfiles(state.parks, nextSites, nextStays);
 
-    setState({ ...state, sites: nextSites, stays: nextStays });
+    setState({ ...state, sites: nextSites, stays: nextStays, parks: nextParks });
     closeStayModal();
     setTab('diary');
 
@@ -119,6 +125,17 @@ export default function App() {
       if (editingStay) await updateStayRemote(draft, stay);
       else await createStayRemote(draft, stay);
     })().catch(() => setMode('local'));
+  }
+
+  function savePark(park: ParkProfile) {
+    if (!state || !parkToEdit) return;
+    const original = parkToEdit;
+    const renamed = renameParkRecords(state.sites, state.stays, original, park);
+    const parks = (state.parks ?? []).map((item) => item.id === original.id ? park : item)
+      .sort((a, b) => a.name.localeCompare(b.name) || a.state.localeCompare(b.state));
+    setState({ ...state, ...renamed, parks });
+    setParkToEdit(undefined);
+    saveParkRemote(original, park).catch(() => setMode('local'));
   }
 
   function openWishlist(site?: Campsite) {
@@ -239,6 +256,17 @@ export default function App() {
           />
         )}
         {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} onAdd={() => openStay()} onEdit={openEditStay} />}
+        {tab === 'parks' && (
+          <ParksPanel
+            parks={state.parks ?? []}
+            sites={state.sites}
+            stays={state.stays}
+            profile={activeProfile}
+            onEdit={setParkToEdit}
+            onSelectSite={(site) => { selectSite(site); setTab('map'); }}
+            onLogStay={openStay}
+          />
+        )}
         {tab === 'wishlist' && (
           <WishlistPanel
             sites={state.sites}
@@ -271,6 +299,7 @@ export default function App() {
 
       {showStayModal && <StayModal sites={state.sites} initialSite={staySite} initialStay={editingStay} onClose={closeStayModal} onSave={saveStay} />}
       {showWishlistModal && <WishlistModal site={wishlistSite} onClose={() => { setShowWishlistModal(false); setWishlistSite(undefined); }} onSave={saveWishlistSite} />}
+      {parkToEdit && <ParkEditModal park={parkToEdit} onClose={() => setParkToEdit(undefined)} onSave={savePark} />}
     </div>
   );
 }
