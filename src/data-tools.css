@@ -1,0 +1,45 @@
+.data-page { max-width: 1120px; }
+.storage-status-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; margin-bottom: 22px; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 12px 32px rgba(23,62,49,.06); }
+.storage-status-card.local { border-color: #e3ca83; background: linear-gradient(135deg, #fff9e8, #fff); }
+.storage-status-card.cloud { border-color: #a9d3b9; background: linear-gradient(135deg, #effaf3, #fff); }
+.storage-status-icon { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; color: var(--forest); background: #e7efe8; }
+.storage-status-card.local .storage-status-icon { color: #805714; background: #fff0bf; }
+.storage-status-card h3 { margin: 0 0 5px; color: var(--forest); font-family: Georgia, 'Times New Roman', serif; font-size: 1.35rem; }
+.storage-status-card p:last-child { margin: 0; color: var(--muted); line-height: 1.5; }
+.storage-state-pill { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 7px 10px; border-radius: 999px; font-size: .72rem; font-weight: 900; }
+.storage-state-pill.cloud { color: #17613f; background: #dff4e7; }
+.storage-state-pill.local { color: #805714; background: #fff0bf; }
+.data-tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+.data-tool-card { display: grid; gap: 18px; padding: 23px; border: 1px solid var(--line); border-radius: 22px; background: #fff; box-shadow: 0 14px 35px rgba(23,62,49,.06); }
+.data-tool-heading { display: flex; align-items: flex-start; gap: 13px; }
+.data-tool-heading > span { width: 43px; height: 43px; flex: none; display: grid; place-items: center; border-radius: 13px; color: var(--forest); background: #e7efe8; }
+.restore-card .data-tool-heading > span { color: #28516d; background: #e8f3fb; }
+.data-tool-heading h3 { margin: 0 0 5px; color: var(--forest); font-family: Georgia, 'Times New Roman', serif; font-size: 1.25rem; }
+.data-tool-heading p { margin: 0; color: var(--muted); line-height: 1.5; }
+.backup-count-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.backup-count-grid span { display: grid; gap: 2px; padding: 10px; border-radius: 12px; background: #f0f4ef; color: var(--muted); font-size: .72rem; }
+.backup-count-grid strong { color: var(--forest); font-size: 1.15rem; }
+.backup-file-picker { width: 100%; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 15px; border: 1px dashed #9fb9aa; border-radius: 14px; color: var(--forest); background: #f7faf7; text-align: left; }
+.backup-file-picker:hover { border-color: var(--forest-2); background: #f0f6f1; }
+.backup-file-picker strong, .backup-file-picker small { display: block; }
+.backup-file-picker small { margin-top: 3px; color: var(--muted); }
+.selected-backup-summary { display: grid; gap: 11px; padding: 14px; border: 1px solid #aad3ba; border-radius: 14px; background: #effaf3; }
+.selected-backup-summary > div:first-child { display: flex; align-items: center; gap: 7px; color: #17613f; }
+.selected-backup-summary .backup-count-grid { grid-template-columns: repeat(4, 1fr); }
+.data-message { display: flex; align-items: flex-start; gap: 8px; padding: 12px; border-radius: 12px; font-weight: 700; font-size: .83rem; line-height: 1.4; }
+.data-message.error { color: #8b302d; background: #fae5e3; }
+.data-message.success { color: #17613f; background: #def4e7; }
+.restore-warning { margin: -8px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.visually-hidden { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0,0,0,0) !important; white-space: nowrap !important; border: 0 !important; }
+
+@media (max-width: 900px) {
+  .data-tool-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .storage-status-card { grid-template-columns: auto 1fr; }
+  .storage-state-pill { grid-column: 1 / -1; }
+  .backup-count-grid, .selected-backup-summary .backup-count-grid { grid-template-columns: 1fr 1fr; }
+  .data-tool-card { padding: 18px; }
+  .mobile-nav { grid-template-columns: repeat(8, minmax(68px, 1fr)); }
+}
