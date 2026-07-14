@@ -73,24 +73,35 @@ async function request(path: string, init: RequestInit): Promise<void> {
   }
 }
 
+function stayPayload(draft: StayDraft, stay: Stay) {
+  return {
+    id: stay.id,
+    siteId: draft.siteId,
+    siteSnapshot: draft.siteSnapshot,
+    arrivalDate: draft.arrivalDate,
+    departureDate: draft.departureDate,
+    nights: draft.nights,
+    nightlyRate: draft.nightlyRate,
+    journal: draft.journal,
+    weather: draft.weather,
+    wouldReturn: draft.wouldReturn,
+    observations: draft.observations,
+    updateCurrentKeys: draft.updateCurrentKeys,
+    createdAt: stay.createdAt,
+  };
+}
+
 export async function createStayRemote(draft: StayDraft, stay: Stay): Promise<void> {
   await request('/api/stays', {
     method: 'POST',
-    body: JSON.stringify({
-      id: stay.id,
-      siteId: draft.siteId,
-      siteSnapshot: draft.siteSnapshot,
-      arrivalDate: draft.arrivalDate,
-      departureDate: draft.departureDate,
-      nights: draft.nights,
-      nightlyRate: draft.nightlyRate,
-      journal: draft.journal,
-      weather: draft.weather,
-      wouldReturn: draft.wouldReturn,
-      observations: draft.observations,
-      updateCurrentKeys: draft.updateCurrentKeys,
-      createdAt: stay.createdAt,
-    }),
+    body: JSON.stringify(stayPayload(draft, stay)),
+  });
+}
+
+export async function updateStayRemote(draft: StayDraft, stay: Stay): Promise<void> {
+  await request(`/api/stays/${encodeURIComponent(stay.id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(stayPayload(draft, stay)),
   });
 }
 
