@@ -68,7 +68,7 @@ export function DataPanel({ state, mode }: DataPanelProps) {
 
   async function restoreToCloud() {
     if (!backup || importing) return;
-    if (!window.confirm('Restore this backup into Cloudflare D1? This will replace any Camp Ledger data already in that database. Your downloaded backup file will not be changed.')) return;
+    if (!window.confirm('Import this backup into the new Cloudflare D1 database? The importer only works while that database is empty. Your downloaded backup file will not be changed.')) return;
     setImporting(true);
     setMessage('');
     setError('');
@@ -80,10 +80,10 @@ export function DataPanel({ state, mode }: DataPanelProps) {
       });
       const result = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(result.error || `Import failed with status ${response.status}.`);
-      setMessage('Backup restored to D1. Reloading Camp Ledger from the cloud…');
+      setMessage('Backup imported to D1. Reloading Camp Ledger from the cloud…');
       window.setTimeout(() => window.location.reload(), 1200);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to restore the backup.');
+      setError(cause instanceof Error ? cause.message : 'Unable to import the backup.');
       setImporting(false);
     }
   }
@@ -94,7 +94,7 @@ export function DataPanel({ state, mode }: DataPanelProps) {
         <div>
           <p className="eyebrow">Backup and storage</p>
           <h2>Your data</h2>
-          <p>Download a complete copy of Camp Ledger or restore one of your JSON backups into Cloudflare D1.</p>
+          <p>Download a complete copy of Camp Ledger or import one of your JSON backups into a new, empty Cloudflare D1 database.</p>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export function DataPanel({ state, mode }: DataPanelProps) {
         <div>
           <p className="eyebrow">Current storage</p>
           <h3>{mode === 'cloud' ? 'Cloudflare D1' : 'This browser only'}</h3>
-          <p>{mode === 'cloud' ? 'Camp Ledger loaded successfully from the database bound as DB.' : 'Your current entries are still in this browser. Keep your downloaded backups until the cloud restore is complete.'}</p>
+          <p>{mode === 'cloud' ? 'Camp Ledger loaded successfully from the database bound as DB.' : 'Your current entries are still in this browser. Keep your downloaded backups until the cloud import is complete.'}</p>
         </div>
         <span className={`storage-state-pill ${mode}`}>{mode === 'cloud' ? <CheckCircle2 size={16} /> : <ShieldCheck size={16} />}{mode === 'cloud' ? 'Cloud connected' : 'Backups required'}</span>
       </div>
@@ -120,7 +120,7 @@ export function DataPanel({ state, mode }: DataPanelProps) {
         </article>
 
         <article className="data-tool-card restore-card">
-          <div className="data-tool-heading"><span><Database /></span><div><h3>Restore a backup to D1</h3><p>Select one of the files you already downloaded. Nothing is uploaded until you press Restore.</p></div></div>
+          <div className="data-tool-heading"><span><Database /></span><div><h3>Import a backup to D1</h3><p>Select one of the files you already downloaded. Nothing is uploaded until you press Import.</p></div></div>
           <input ref={inputRef} className="visually-hidden" type="file" accept="application/json,.json" onChange={(event) => void chooseFile(event.target.files?.[0])} />
           <button type="button" className="backup-file-picker" onClick={() => inputRef.current?.click()}>
             <FileJson size={24} />
@@ -144,9 +144,9 @@ export function DataPanel({ state, mode }: DataPanelProps) {
           {message && <div className="data-message success"><CheckCircle2 size={18} /> {message}</div>}
 
           <button type="button" className="primary-button" disabled={!backup || importing} onClick={() => void restoreToCloud()}>
-            <Cloud size={17} /> {importing ? 'Restoring…' : 'Restore backup to cloud'}
+            <Cloud size={17} /> {importing ? 'Importing…' : 'Import backup to cloud'}
           </button>
-          <p className="restore-warning">This replaces data already in the connected D1 database. It does not delete or alter your downloaded backup file.</p>
+          <p className="restore-warning">The one-time importer refuses to overwrite a D1 database that already contains Camp Ledger data. Your downloaded backup remains unchanged.</p>
         </article>
       </div>
     </section>
