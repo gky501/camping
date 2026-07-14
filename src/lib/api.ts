@@ -1,27 +1,32 @@
 import { seedState } from '../data/seed';
-import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft } from '../types';
+import { mergeParkProfiles } from './parks';
+import type { AppState, Campsite, ParkProfile, PreferenceProfile, Stay, StayDraft } from '../types';
 
 const STORAGE_KEY = 'camp-ledger-state-v2-wishlist-only';
 
 function normalizeState(state: AppState): AppState {
+  const sites = state.sites.map((site) => {
+    const splitCrystalSprings = site.id === 'lake-ouachita-crystal-springs-c-55' && !site.area && site.loop === 'Crystal Springs C';
+    return {
+      ...site,
+      // Older versions called wish-list records "saved". Convert them on load.
+      status: String(site.status) === 'saved' ? 'wishlist' as const : site.status,
+      area: splitCrystalSprings ? 'Crystal Springs' : (site.area ?? ''),
+      loop: splitCrystalSprings ? 'C' : site.loop,
+      amenities: {
+        ...(site.amenities ?? {}),
+        features: site.amenities?.features ?? [],
+      },
+      // Imported spreadsheet stay counts were intentionally cleared; dated diary entries are the source of truth.
+      legacyStayCount: 0,
+    };
+  });
+  const stays = state.stays ?? [];
   return {
     ...state,
-    sites: state.sites.map((site) => {
-      const splitCrystalSprings = site.id === 'lake-ouachita-crystal-springs-c-55' && !site.area && site.loop === 'Crystal Springs C';
-      return {
-        ...site,
-        // Older versions called wish-list records "saved". Convert them on load.
-        status: String(site.status) === 'saved' ? 'wishlist' : site.status,
-        area: splitCrystalSprings ? 'Crystal Springs' : (site.area ?? ''),
-        loop: splitCrystalSprings ? 'C' : site.loop,
-        amenities: {
-          ...(site.amenities ?? {}),
-          features: site.amenities?.features ?? [],
-        },
-        // Imported spreadsheet stay counts were intentionally cleared; dated diary entries are the source of truth.
-        legacyStayCount: 0,
-      };
-    }),
+    sites,
+    stays,
+    parks: mergeParkProfiles(state.parks, sites, stays),
   };
 }
 
@@ -31,6 +36,7 @@ function cloneSeed(): AppState {
     ...cloned,
     sites: cloned.sites.filter((site) => site.status === 'wishlist'),
     stays: [],
+    parks: [],
   };
 }
 
@@ -102,6 +108,17 @@ export async function updateStayRemote(draft: StayDraft, stay: Stay): Promise<vo
   await request(`/api/stays/${encodeURIComponent(stay.id)}`, {
     method: 'PATCH',
     body: JSON.stringify(stayPayload(draft, stay)),
+  });
+}
+
+export async function saveParkRemote(original: ParkProfile, park: ParkProfile): Promise<void> {
+  await request(`/api/parks/${encodeURIComponent(original.id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      ...park,
+      originalName: original.name,
+      originalState: original.state,
+    }),
   });
 }
 
