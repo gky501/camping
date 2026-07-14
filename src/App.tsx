@@ -7,7 +7,7 @@ import { PreferencesPanel } from './components/PreferencesPanel';
 import { StayModal } from './components/StayModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createSiteRemote, createStayRemote, deleteProfileRemote, loadAppState, persistLocal, saveProfileRemote } from './lib/api';
+import { createSiteRemote, createStayRemote, deleteProfileRemote, loadAppState, persistLocal, saveProfileRemote, saveSiteRemote } from './lib/api';
 import { createId } from './lib/id';
 import type { AppState, Campsite, PreferenceProfile, Stay, StayDraft, WishlistSiteDraft } from './types';
 
@@ -62,6 +62,7 @@ export default function App() {
     const stay: Stay = {
       id: createId('stay'),
       siteId: draft.siteId,
+      siteSnapshot: draft.siteSnapshot,
       arrivalDate: draft.arrivalDate,
       departureDate: draft.departureDate,
       nights: draft.nights,
@@ -73,7 +74,12 @@ export default function App() {
       createdAt: new Date().toISOString(),
     };
 
-    const nextSites = state.sites.map((site) => {
+    let workingSites = draft.createSite ? [...state.sites, draft.createSite] : [...state.sites];
+    if (draft.updateSiteDetails) {
+      workingSites = workingSites.map((site) => site.id === draft.siteId ? { ...site, ...draft.updateSiteDetails } : site);
+    }
+
+    const nextSites = workingSites.map((site) => {
       if (site.id !== draft.siteId) return site;
       const currentFacts = { ...site.currentFacts };
       for (const key of draft.updateCurrentKeys) {
@@ -87,7 +93,12 @@ export default function App() {
     setState({ ...state, sites: nextSites, stays: [...state.stays, stay] });
     setShowStayModal(false);
     setTab('diary');
-    createStayRemote(draft, stay).catch(() => setMode('local'));
+
+    void (async () => {
+      if (draft.createSite) await createSiteRemote({ ...draft.createSite, status: 'visited' });
+      else if (draft.updateSiteDetails) await saveSiteRemote({ ...draft.updateSiteDetails, status: 'visited' });
+      await createStayRemote(draft, stay);
+    })().catch(() => setMode('local'));
   }
 
   function saveWishlistSite(draft: WishlistSiteDraft) {

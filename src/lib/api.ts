@@ -6,11 +6,16 @@ const STORAGE_KEY = 'camp-ledger-state-v1';
 function normalizeState(state: AppState): AppState {
   return {
     ...state,
-    sites: state.sites.map((site) => ({
-      ...site,
-      // Older versions called wish-list records "saved". Convert them on load.
-      status: String(site.status) === 'saved' ? 'wishlist' : site.status,
-    })),
+    sites: state.sites.map((site) => {
+      const splitCrystalSprings = site.id === 'lake-ouachita-crystal-springs-c-55' && !site.area && site.loop === 'Crystal Springs C';
+      return {
+        ...site,
+        // Older versions called wish-list records "saved". Convert them on load.
+        status: String(site.status) === 'saved' ? 'wishlist' : site.status,
+        area: splitCrystalSprings ? 'Crystal Springs' : (site.area ?? ''),
+        loop: splitCrystalSprings ? 'C' : site.loop,
+      };
+    }),
   };
 }
 
@@ -60,7 +65,21 @@ async function request(path: string, init: RequestInit): Promise<void> {
 export async function createStayRemote(draft: StayDraft, stay: Stay): Promise<void> {
   await request('/api/stays', {
     method: 'POST',
-    body: JSON.stringify({ ...draft, id: stay.id, createdAt: stay.createdAt }),
+    body: JSON.stringify({
+      id: stay.id,
+      siteId: draft.siteId,
+      siteSnapshot: draft.siteSnapshot,
+      arrivalDate: draft.arrivalDate,
+      departureDate: draft.departureDate,
+      nights: draft.nights,
+      nightlyRate: draft.nightlyRate,
+      journal: draft.journal,
+      weather: draft.weather,
+      wouldReturn: draft.wouldReturn,
+      observations: draft.observations,
+      updateCurrentKeys: draft.updateCurrentKeys,
+      createdAt: stay.createdAt,
+    }),
   });
 }
 

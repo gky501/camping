@@ -29,16 +29,20 @@ export type MonthKey = (typeof MONTHS)[number]['key'];
 export type CriterionKey = (typeof CRITERIA)[number]['key'];
 export type RatingMap = Partial<Record<CriterionKey, number>>;
 export type MonthRatingMap = Partial<Record<MonthKey, number>>;
-export type CampsiteStatus = 'visited' | 'wishlist' | 'avoid' | 'reserved' | 'saved'; // saved is retained only for legacy imports
+export type CampsiteStatus = 'visited' | 'wishlist' | 'avoid' | 'reserved' | 'saved';
 
-export interface Campsite {
-  id: string;
+export interface SiteLocation {
   park: string;
   state: string;
+  area?: string;
   loop: string;
   siteNumber: string;
   latitude: number;
   longitude: number;
+}
+
+export interface Campsite extends SiteLocation {
+  id: string;
   notes: string;
   viewTypes: string[];
   currentFacts: RatingMap;
@@ -49,19 +53,14 @@ export interface Campsite {
   status?: CampsiteStatus;
 }
 
-export interface WishlistSiteDraft {
-  park: string;
-  state: string;
-  loop: string;
-  siteNumber: string;
-  latitude: number;
-  longitude: number;
+export interface WishlistSiteDraft extends SiteLocation {
   notes: string;
 }
 
 export interface Stay {
   id: string;
   siteId: string;
+  siteSnapshot?: SiteLocation;
   arrivalDate: string;
   departureDate: string;
   nights: number;
@@ -88,6 +87,9 @@ export interface AppState {
   profiles: PreferenceProfile[];
 }
 
-export interface StayDraft extends Omit<Stay, 'id' | 'createdAt'> {
+export interface StayDraft extends Omit<Stay, 'id' | 'createdAt' | 'siteSnapshot'> {
+  siteSnapshot: SiteLocation;
   updateCurrentKeys: CriterionKey[];
+  createSite?: Campsite;
+  updateSiteDetails?: Campsite;
 }
