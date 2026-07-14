@@ -11,13 +11,29 @@ export const onRequestPatch: PagesFunction<Env> = async ({ env, request, params 
 
 export const onRequestDelete: PagesFunction<Env> = async ({ env, params }) => {
   if (!env.DB) return error('D1 binding DB is not configured.', 503);
+
   try {
-    const result = await env.DB.prepare("DELETE FROM sites WHERE id=? AND status IN ('wishlist','saved')")
-      .bind(String(params.id || ''))
-      .run();
-    return result.meta.changes
-      ? Response.json({ ok: true })
-      : error('Wish-list site not found.', 404);
+    const id = String(params.id || '');
+    const site = await env.DB.prepare('SELECT id FROM sites WHERE id=?').bind(id).first();
+    if (!site) return error('Campsite not found.', 404);
+
+    const stayCount = await env.DB
+      .prepare('SELECT COUNT(*) AS count FROM stays WHERE site_id=?')
+      .bind(id)
+      .first<{ count: number }>();
+
+    if (Number(stayCount?.count ?? 0) > 0) {
+      return error('Delete the campsite’s trips before deleting its map marker.', 409);
+    }
+
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM site_fact_history WHERE site_id=?').bind(id),
+      env.DB.prepare('DELETE FROM site_facts WHERE site_id=?').bind(id),
+      env.DB.prepare('DELETE FROM site_seasonal_ratings WHERE site_id=?').bind(id),
+      env.DB.prepare('DELETE FROM sites WHERE id=?').bind(id),
+    ]);
+
+    return Response.json({ ok: true });
   } catch (cause) {
     return error(cause instanceof Error ? cause.message : 'Unexpected error', 500);
   }
