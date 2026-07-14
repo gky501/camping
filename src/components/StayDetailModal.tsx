@@ -1,10 +1,15 @@
-import { CalendarDays, MapPin, Moon, X } from 'lucide-react';
+import { CalendarDays, MapPin, Moon, Pencil, X } from 'lucide-react';
 import { summarizeAmenities } from '../lib/amenities';
 import { formatDateRange } from '../lib/dates';
 import { CRITERIA, type Campsite, type Stay } from '../types';
 import { SiteLocationPicker } from './SiteLocationPicker';
 
-export function StayDetailModal({ stay, site, onClose }: { stay: Stay; site?: Campsite; onClose: () => void }) {
+export function StayDetailModal({ stay, site, onEdit, onClose }: {
+  stay: Stay;
+  site?: Campsite;
+  onEdit: () => void;
+  onClose: () => void;
+}) {
   const location = stay.siteSnapshot ?? site;
   const locationLine = [location?.area, location?.loop ? `Loop ${location.loop}` : '', location?.siteNumber ? `Site ${location.siteNumber}` : ''].filter(Boolean).join(' · ');
   const observed = CRITERIA.filter((criterion) => stay.observations[criterion.key] !== undefined);
@@ -50,7 +55,10 @@ export function StayDetailModal({ stay, site, onClose }: { stay: Stay; site?: Ca
           <h3>Diary notes</h3>
           <p className="diary-notes">{stay.journal || 'No notes were added to this stay.'}</p>
         </section>
-        <div className="modal-actions"><button type="button" className="primary-button" onClick={onClose}>Done</button></div>
+        <div className="modal-actions">
+          <button type="button" className="secondary-button" onClick={onEdit}><Pencil size={16} /> Edit stay</button>
+          <button type="button" className="primary-button" onClick={onClose}>Done</button>
+        </div>
       </div>
     </div>
   );
