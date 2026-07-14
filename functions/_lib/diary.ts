@@ -7,6 +7,32 @@ export type JsonObject = Record<string, unknown>;
 export const json = (data: unknown, status = 200) => Response.json(data, { status });
 export const error = (message: string, status = 400) => json({ error: message }, status);
 
+function parkKey(name: unknown, state: unknown): string {
+  return `${String(name ?? '').trim().toLowerCase()}::${String(state ?? '').trim().toLowerCase()}`;
+}
+
+async function ensureParkProfiles(db: D1Database) {
+  const [siteRows, parkRows] = await Promise.all([
+    db.prepare(`SELECT DISTINCT s.park, s.state
+      FROM sites s
+      INNER JOIN stays st ON st.site_id=s.id
+      WHERE TRIM(s.park)<>''`).all(),
+    db.prepare('SELECT id,name,state FROM park_profiles').all(),
+  ]);
+
+  const known = new Set((parkRows.results as Array<Record<string, unknown>>).map((row) => parkKey(row.name, row.state)));
+  const statements: D1PreparedStatement[] = [];
+  for (const row of siteRows.results as Array<Record<string, unknown>>) {
+    const name = String(row.park ?? '').trim();
+    const state = String(row.state ?? '').trim() || 'Unknown';
+    const key = parkKey(name, state);
+    if (!name || known.has(key)) continue;
+    known.add(key);
+    statements.push(db.prepare(`INSERT INTO park_profiles (id,name,state,notes) VALUES (?,?,?,'')`).bind(crypto.randomUUID(), name, state));
+  }
+  if (statements.length) await db.batch(statements);
+}
+
 export async function ensureDiarySchema(db: D1Database) {
   const siteColumns = await db.prepare('PRAGMA table_info(sites)').all();
   const siteNames = new Set((siteColumns.results as Array<Record<string, unknown>>).map((row) => String(row.name)));
@@ -20,11 +46,24 @@ export async function ensureDiarySchema(db: D1Database) {
   const stayColumns = await db.prepare('PRAGMA table_info(stays)').all();
   const stayNames = new Set((stayColumns.results as Array<Record<string, unknown>>).map((row) => String(row.name)));
   if (!stayNames.has('site_snapshot_json')) await db.prepare('ALTER TABLE stays ADD COLUMN site_snapshot_json TEXT').run();
+
+  await db.prepare(`CREATE TABLE IF NOT EXISTS park_profiles (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    state TEXT NOT NULL,
+    check_in_time TEXT,
+    check_out_time TEXT,
+    notes TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name,state)
+  )`).run();
+  await ensureParkProfiles(db);
 }
 
 export async function loadBootstrap(db: D1Database) {
   await ensureDiarySchema(db);
-  const [sitesResult, factsResult, seasonsResult, staysResult, observationsResult, profilesResult, criterionWeightsResult, monthWeightsResult] = await Promise.all([
+  const [sitesResult, factsResult, seasonsResult, staysResult, observationsResult, profilesResult, criterionWeightsResult, monthWeightsResult, parksResult] = await Promise.all([
     db.prepare('SELECT * FROM sites ORDER BY park, area, loop, site_number').all(),
     db.prepare('SELECT site_id, criterion_key, rating FROM site_facts').all(),
     db.prepare('SELECT site_id, month_key, rating FROM site_seasonal_ratings').all(),
@@ -33,6 +72,7 @@ export async function loadBootstrap(db: D1Database) {
     db.prepare('SELECT * FROM preference_profiles ORDER BY created_at').all(),
     db.prepare('SELECT profile_id, criterion_key, weight FROM profile_criterion_weights').all(),
     db.prepare('SELECT profile_id, month_key, weight FROM profile_month_weights').all(),
+    db.prepare('SELECT * FROM park_profiles ORDER BY name,state').all(),
   ]);
 
   const factsBySite = new Map<string, Record<string, number>>();
@@ -82,6 +122,14 @@ export async function loadBootstrap(db: D1Database) {
       id: row.id, name: row.name, siteQualityShare: Number(row.site_quality_share), seasonalShare: Number(row.seasonal_share),
       criterionWeights: criterionByProfile.get(String(row.id)) ?? {}, monthWeights: monthsByProfile.get(String(row.id)) ?? {},
     })),
+    parks: (parksResult.results as Array<Record<string, unknown>>).map((row) => ({
+      id: row.id,
+      name: row.name,
+      state: row.state,
+      checkInTime: row.check_in_time ?? undefined,
+      checkOutTime: row.check_out_time ?? undefined,
+      notes: row.notes ?? '',
+    })),
   };
 }
 
@@ -102,6 +150,43 @@ export async function updateSite(db: D1Database, id: string, body: JsonObject) {
   await db.prepare(`UPDATE sites SET park=?,state=?,area=?,loop=?,site_number=?,latitude=?,longitude=?,notes=?,amenities_json=?,view_types_json=?,favorite=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
     .bind(body.park, body.state, body.area ?? '', body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.amenities ?? {}), JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'wishlist', id).run();
   return json({ ok: true });
+}
+
+export async function updatePark(db: D1Database, id: string, body: JsonObject) {
+  await ensureDiarySchema(db);
+  const current = await db.prepare('SELECT * FROM park_profiles WHERE id=?').bind(id).first<Record<string, unknown>>();
+  if (!current) return error('Park not found.', 404);
+
+  const name = String(body.name ?? '').trim();
+  const state = String(body.state ?? '').trim() || 'Unknown';
+  if (!name) return error('Park name is required.');
+
+  const duplicate = await db.prepare('SELECT id FROM park_profiles WHERE LOWER(name)=LOWER(?) AND LOWER(state)=LOWER(?) AND id<>?').bind(name, state, id).first();
+  if (duplicate) return error('A park with that name and state already exists.', 409);
+
+  const oldName = String(current.name);
+  const oldState = String(current.state);
+  const stayRows = await db.prepare('SELECT id,site_snapshot_json FROM stays WHERE site_snapshot_json IS NOT NULL').all();
+  const statements: D1PreparedStatement[] = [
+    db.prepare(`UPDATE park_profiles SET name=?,state=?,check_in_time=?,check_out_time=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+      .bind(name, state, body.checkInTime ? String(body.checkInTime) : null, body.checkOutTime ? String(body.checkOutTime) : null, String(body.notes ?? ''), id),
+    db.prepare('UPDATE sites SET park=?,state=?,updated_at=CURRENT_TIMESTAMP WHERE LOWER(park)=LOWER(?) AND LOWER(state)=LOWER(?)').bind(name, state, oldName, oldState),
+  ];
+
+  for (const row of stayRows.results as Array<Record<string, unknown>>) {
+    try {
+      const snapshot = JSON.parse(String(row.site_snapshot_json)) as Record<string, unknown>;
+      if (parkKey(snapshot.park, snapshot.state) !== parkKey(oldName, oldState)) continue;
+      snapshot.park = name;
+      snapshot.state = state;
+      statements.push(db.prepare('UPDATE stays SET site_snapshot_json=? WHERE id=?').bind(JSON.stringify(snapshot), row.id));
+    } catch {
+      // Leave malformed legacy snapshots untouched rather than blocking the park update.
+    }
+  }
+
+  await db.batch(statements);
+  return json({ ok: true, id });
 }
 
 function stayValues(body: JsonObject) {
@@ -136,6 +221,7 @@ export async function createStay(db: D1Database, body: JsonObject) {
     ...observationStatements(db, id, siteId, body),
   ];
   await db.batch(statements);
+  await ensureParkProfiles(db);
   return json({ ok: true, id }, 201);
 }
 
@@ -155,5 +241,6 @@ export async function updateStay(db: D1Database, id: string, body: JsonObject) {
     ...observationStatements(db, id, siteId, body),
   ];
   await db.batch(statements);
+  await ensureParkProfiles(db);
   return json({ ok: true, id });
 }
