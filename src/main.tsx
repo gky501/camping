@@ -9,5 +9,11 @@ import './trip-ui.css';
 import './campers.css';
 import './data-tools.css';
 import App from './App';
+import { DataMigrationLauncher } from './components/DataMigrationLauncher';
 
-createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+    <DataMigrationLauncher />
+  </StrictMode>,
+);
