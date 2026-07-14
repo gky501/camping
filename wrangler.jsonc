@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "campsite-diary",
+  "pages_build_output_dir": "./dist",
+  "compatibility_date": "2026-07-14",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "campsite-diary",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
