@@ -104,23 +104,56 @@ export async function updateSite(db: D1Database, id: string, body: JsonObject) {
   return json({ ok: true });
 }
 
-export async function createStay(db: D1Database, body: JsonObject) {
-  await ensureDiarySchema(db);
-  const id = String(body.id || crypto.randomUUID()); const siteId = String(body.siteId || '');
-  const arrivalDate = String(body.arrivalDate || ''); const departureDate = String(body.departureDate || ''); const nights = Number(body.nights || 0);
-  if (!siteId || !arrivalDate || !departureDate || nights < 1) return error('Site, dates, and at least one night are required.');
+function stayValues(body: JsonObject) {
+  const siteId = String(body.siteId || '');
+  const arrivalDate = String(body.arrivalDate || '');
+  const departureDate = String(body.departureDate || '');
+  const nights = Number(body.nights || 0);
+  return { siteId, arrivalDate, departureDate, nights };
+}
+
+function observationStatements(db: D1Database, stayId: string, siteId: string, body: JsonObject) {
   const observations = (body.observations ?? {}) as Record<string, number>;
   const updateCurrentKeys = Array.isArray(body.updateCurrentKeys) ? body.updateCurrentKeys.map(String) : [];
+  const statements: D1PreparedStatement[] = [];
+  for (const [key, rawRating] of Object.entries(observations)) {
+    const rating = Number(rawRating); if (!Number.isFinite(rating) || rating < 0 || rating > 5) continue;
+    statements.push(db.prepare('INSERT OR REPLACE INTO stay_observations (stay_id,criterion_key,rating) VALUES (?,?,?)').bind(stayId, key, rating));
+    if (updateCurrentKeys.includes(key)) statements.push(db.prepare(`INSERT INTO site_facts (site_id,criterion_key,rating,updated_at) VALUES (?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(site_id,criterion_key) DO UPDATE SET rating=excluded.rating,updated_at=CURRENT_TIMESTAMP`).bind(siteId, key, rating));
+  }
+  return statements;
+}
+
+export async function createStay(db: D1Database, body: JsonObject) {
+  await ensureDiarySchema(db);
+  const id = String(body.id || crypto.randomUUID());
+  const { siteId, arrivalDate, departureDate, nights } = stayValues(body);
+  if (!siteId || !arrivalDate || !departureDate || nights < 1) return error('Site, dates, and at least one night are required.');
   const statements: D1PreparedStatement[] = [
     db.prepare(`INSERT INTO stays (id,site_id,site_snapshot_json,arrival_date,departure_date,nights,nightly_rate,journal,weather,would_return,created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
       .bind(id, siteId, body.siteSnapshot ? JSON.stringify(body.siteSnapshot) : null, arrivalDate, departureDate, nights, body.nightlyRate === undefined ? null : Number(body.nightlyRate), String(body.journal || ''), body.weather ? String(body.weather) : null, body.wouldReturn === undefined ? null : body.wouldReturn ? 1 : 0, String(body.createdAt || new Date().toISOString())),
     db.prepare("UPDATE sites SET status='visited', updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(siteId),
+    ...observationStatements(db, id, siteId, body),
   ];
-  for (const [key, rawRating] of Object.entries(observations)) {
-    const rating = Number(rawRating); if (!Number.isFinite(rating) || rating < 0 || rating > 5) continue;
-    statements.push(db.prepare('INSERT OR REPLACE INTO stay_observations (stay_id,criterion_key,rating) VALUES (?,?,?)').bind(id, key, rating));
-    if (updateCurrentKeys.includes(key)) statements.push(db.prepare(`INSERT INTO site_facts (site_id,criterion_key,rating,updated_at) VALUES (?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(site_id,criterion_key) DO UPDATE SET rating=excluded.rating,updated_at=CURRENT_TIMESTAMP`).bind(siteId, key, rating));
-  }
   await db.batch(statements);
   return json({ ok: true, id }, 201);
+}
+
+export async function updateStay(db: D1Database, id: string, body: JsonObject) {
+  await ensureDiarySchema(db);
+  const existing = await db.prepare('SELECT id FROM stays WHERE id=?').bind(id).first();
+  if (!existing) return error('Diary entry not found.', 404);
+
+  const { siteId, arrivalDate, departureDate, nights } = stayValues(body);
+  if (!siteId || !arrivalDate || !departureDate || nights < 1) return error('Site, dates, and at least one night are required.');
+
+  const statements: D1PreparedStatement[] = [
+    db.prepare(`UPDATE stays SET site_id=?,site_snapshot_json=?,arrival_date=?,departure_date=?,nights=?,nightly_rate=?,journal=?,weather=?,would_return=? WHERE id=?`)
+      .bind(siteId, body.siteSnapshot ? JSON.stringify(body.siteSnapshot) : null, arrivalDate, departureDate, nights, body.nightlyRate === undefined ? null : Number(body.nightlyRate), String(body.journal || ''), body.weather ? String(body.weather) : null, body.wouldReturn === undefined ? null : body.wouldReturn ? 1 : 0, id),
+    db.prepare('DELETE FROM stay_observations WHERE stay_id=?').bind(id),
+    db.prepare("UPDATE sites SET status='visited', updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(siteId),
+    ...observationStatements(db, id, siteId, body),
+  ];
+  await db.batch(statements);
+  return json({ ok: true, id });
 }
