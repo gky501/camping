@@ -21,8 +21,8 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request, params
     const remaining = await env.DB.prepare('SELECT COUNT(*) AS count FROM stays WHERE site_id=? AND id<>?')
       .bind(siteId, id)
       .first<{ count: number }>();
-    const deleteOrphanSite = new URL(request.url).searchParams.get('deleteOrphanSite') === 'true'
-      && Number(remaining?.count ?? 0) === 0;
+    const isOrphan = Number(remaining?.count ?? 0) === 0;
+    const deleteOrphanSite = new URL(request.url).searchParams.get('deleteOrphanSite') === 'true' && isOrphan;
 
     const statements: D1PreparedStatement[] = [
       env.DB.prepare('DELETE FROM stay_observations WHERE stay_id=?').bind(id),
@@ -37,6 +37,8 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request, params
         env.DB.prepare('DELETE FROM site_fact_history WHERE site_id=?').bind(siteId),
         env.DB.prepare('DELETE FROM sites WHERE id=?').bind(siteId),
       );
+    } else if (isOrphan) {
+      statements.push(env.DB.prepare("UPDATE sites SET status='wishlist', updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(siteId));
     }
 
     await env.DB.batch(statements);
