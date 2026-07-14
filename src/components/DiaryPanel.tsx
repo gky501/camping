@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
-import { BookOpen, Eye, Moon, Pencil, Plus, Search } from 'lucide-react';
+import { BookOpen, Eye, Moon, Pencil, Plus, Search, CalendarDays } from 'lucide-react';
 import { formatDateRange } from '../lib/dates';
-import type { Campsite, Stay } from '../types';
+import { sortDiaryStays, tripStatus } from '../lib/trips';
+import type { CamperProfile, Campsite, Stay } from '../types';
 import { StayDetailModal } from './StayDetailModal';
+import { TripMetaPills, TripStatusPill } from './TripPills';
 
-export function DiaryPanel({ sites, stays, onAdd, onEdit }: {
+export function DiaryPanel({ sites, stays, campers, onAdd, onEdit }: {
   sites: Campsite[];
   stays: Stay[];
+  campers: CamperProfile[];
   onAdd: () => void;
   onEdit: (stay: Stay) => void;
 }) {
@@ -14,63 +17,54 @@ export function DiaryPanel({ sites, stays, onAdd, onEdit }: {
   const [selectedStay, setSelectedStay] = useState<Stay>();
   const sorted = useMemo(() => {
     const query = search.trim().toLowerCase();
-    return [...stays]
-      .filter((stay) => {
-        const site = sites.find((item) => item.id === stay.siteId);
-        const location = stay.siteSnapshot ?? site;
-        const haystack = `${location?.park ?? ''} ${location?.state ?? ''} ${location?.area ?? ''} ${location?.loop ?? ''} ${location?.siteNumber ?? ''} ${stay.journal} ${stay.weather ?? ''}`.toLowerCase();
-        return !query || haystack.includes(query);
-      })
-      .sort((a, b) => b.arrivalDate.localeCompare(a.arrivalDate));
-  }, [search, sites, stays]);
+    return sortDiaryStays(stays.filter((stay) => {
+      const site = sites.find((item) => item.id === stay.siteId);
+      const camper = campers.find((item) => item.id === stay.camperId);
+      const location = stay.siteSnapshot ?? site;
+      const haystack = `${location?.park ?? ''} ${location?.state ?? ''} ${location?.area ?? ''} ${location?.loop ?? ''} ${location?.siteNumber ?? ''} ${stay.journal} ${stay.weather ?? ''} ${camper?.name ?? ''}`.toLowerCase();
+      return !query || haystack.includes(query);
+    }));
+  }, [campers, search, sites, stays]);
 
-  function editStay(stay: Stay) {
-    setSelectedStay(undefined);
-    onEdit(stay);
-  }
+  const completed = stays.filter((stay) => tripStatus(stay) === 'completed');
+  const upcoming = stays.filter((stay) => tripStatus(stay) !== 'completed');
+  function editStay(stay: Stay) { setSelectedStay(undefined); onEdit(stay); }
 
   return (
     <section className="content-page">
-      <div className="page-heading">
-        <div><p className="eyebrow">Trip history</p><h2>Camping diary</h2><p>Open any dated stay to review or edit the campsite, exact location, ratings, cost, weather, and notes from that trip.</p></div>
-        <button className="primary-button" onClick={onAdd}><Plus size={18} /> Log a stay</button>
+      <div className="page-heading"><div><p className="eyebrow">Trips and plans</p><h2>Camping diary</h2><p>Upcoming plans stay at the top. Open any entry to finish details, change the camper used, or update the trip after you return.</p></div><button className="primary-button" onClick={onAdd}><Plus size={18} /> Log a stay</button></div>
+      <div className="summary-grid diary-summary-grid">
+        <div className="summary-card"><BookOpen /><div><strong>{completed.length}</strong><span>Completed stays</span></div></div>
+        <div className="summary-card"><Moon /><div><strong>{completed.reduce((sum, stay) => sum + stay.nights, 0)}</strong><span>Completed nights</span></div></div>
+        <div className="summary-card upcoming-summary"><CalendarDays /><div><strong>{upcoming.length}</strong><span>Upcoming trips</span></div></div>
       </div>
-      <div className="summary-grid" style={{ gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
-        <div className="summary-card"><BookOpen /><div><strong>{stays.length}</strong><span>Dated diary entries</span></div></div>
-        <div className="summary-card"><Moon /><div><strong>{stays.reduce((sum, stay) => sum + stay.nights, 0)}</strong><span>Dated nights</span></div></div>
-      </div>
-      <label className="search-field page-search"><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search park, area, loop, site, weather, or notes" /></label>
+      <label className="search-field page-search"><Search size={18} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search park, camper, area, site, weather, or notes" /></label>
       {sorted.length === 0 ? (
-        <div className="empty-state"><BookOpen size={42} /><h3>{stays.length ? 'No stays match that search.' : 'Your diary is ready.'}</h3><p>{stays.length ? 'Try a different park, site number, or note.' : 'Log the next stay with arrival and departure dates. Existing physical ratings will be prefilled automatically.'}</p>{!stays.length && <button className="primary-button" onClick={onAdd}>Create the first dated entry</button>}</div>
+        <div className="empty-state"><BookOpen size={42} /><h3>{stays.length ? 'No trips match that search.' : 'Your diary is ready.'}</h3><p>{stays.length ? 'Try a different park, camper, site number, or note.' : 'Add a future plan or log a completed camping stay.'}</p>{!stays.length && <button className="primary-button" onClick={onAdd}>Create the first entry</button>}</div>
       ) : (
         <div className="timeline">
           {sorted.map((stay) => {
             const site = sites.find((item) => item.id === stay.siteId);
+            const camper = campers.find((item) => item.id === stay.camperId);
             const location = stay.siteSnapshot ?? site;
+            const status = tripStatus(stay);
             const locationLine = [location?.area, location?.loop ? `Loop ${location.loop}` : '', location?.siteNumber ? `Site ${location.siteNumber}` : ''].filter(Boolean).join(' · ');
             return (
-              <article className="timeline-entry" key={stay.id}>
+              <article className={`timeline-entry ${status}`} key={stay.id}>
                 <div className="timeline-dot" />
-                <div className="timeline-card">
-                  <p className="eyebrow">{formatDateRange(stay.arrivalDate, stay.departureDate)}</p>
+                <div className={`timeline-card ${status}`}>
+                  <div className="timeline-card-top"><p className="eyebrow">{formatDateRange(stay.arrivalDate, stay.departureDate)}</p><TripStatusPill stay={stay} /></div>
                   <div className="timeline-title"><div><h3>{location?.park ?? 'Unknown campsite'}</h3><p>{locationLine}</p></div><span className="night-pill"><Moon size={15} /> {stay.nights}</span></div>
                   {stay.journal && <p className="timeline-journal">{stay.journal}</p>}
-                  <div className="chip-row">
-                    {stay.weather && <span className="chip">{stay.weather}</span>}
-                    {stay.nightlyRate !== undefined && <span className="chip">${stay.nightlyRate.toFixed(2)}/night</span>}
-                    {stay.wouldReturn !== undefined && <span className="chip">{stay.wouldReturn ? 'Would return' : 'Would not return'}</span>}
-                  </div>
-                  <div className="button-row diary-entry-actions">
-                    <button type="button" className="text-button view-stay-button" onClick={() => setSelectedStay(stay)}><Eye size={16} /> View full stay</button>
-                    <button type="button" className="text-button" onClick={() => editStay(stay)}><Pencil size={16} /> Edit stay</button>
-                  </div>
+                  <TripMetaPills stay={stay} camper={camper} />
+                  <div className="button-row diary-entry-actions"><button type="button" className="text-button view-stay-button" onClick={() => setSelectedStay(stay)}><Eye size={16} /> View full {status === 'upcoming' ? 'plan' : 'stay'}</button><button type="button" className="text-button" onClick={() => editStay(stay)}><Pencil size={16} /> Edit</button></div>
                 </div>
               </article>
             );
           })}
         </div>
       )}
-      {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} onEdit={() => editStay(selectedStay)} onClose={() => setSelectedStay(undefined)} />}
+      {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} camper={campers.find((camper) => camper.id === selectedStay.camperId)} onEdit={() => editStay(selectedStay)} onClose={() => setSelectedStay(undefined)} />}
     </section>
   );
 }
