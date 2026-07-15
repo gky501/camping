@@ -65,14 +65,15 @@ export function ChecklistPanel({
   const [editor, setEditor] = useState<ChecklistEditDialogConfig>();
 
   useEffect(() => {
-    if (initialStayId && stays.some((stay) => stay.id === initialStayId)) {
-      setSelectedStayId(initialStayId);
-      setMode('trip');
-      return;
-    }
+    if (!initialStayId || !stays.some((stay) => stay.id === initialStayId)) return;
+    setSelectedStayId(initialStayId);
+    setMode('trip');
+  }, [initialStayId, stays]);
+
+  useEffect(() => {
     if (!selectedStayId && suggestedStay) setSelectedStayId(suggestedStay.id);
     if (selectedStayId && !stays.some((stay) => stay.id === selectedStayId)) setSelectedStayId(suggestedStay?.id ?? '');
-  }, [initialStayId, selectedStayId, stays, suggestedStay]);
+  }, [selectedStayId, stays, suggestedStay]);
 
   const selectedStay = sortedStays.find((stay) => stay.id === selectedStayId);
   const storedChecklist = tripChecklists.find((checklist) => checklist.stayId === selectedStayId);
