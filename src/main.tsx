@@ -27,6 +27,7 @@ import './navigation-refresh.css';
 import './header-utilities.css';
 import './photo-coming-soon.css';
 import './header-cleanup.css';
+import './mobile-overflow-fix.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';
