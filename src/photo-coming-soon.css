@@ -1,0 +1,19 @@
+.trip-photo-upload {
+  pointer-events: none;
+  cursor: not-allowed;
+  opacity: .58;
+  background: #e7ebe7 !important;
+  color: #66716a !important;
+  box-shadow: none !important;
+  font-size: 0;
+}
+
+.trip-photo-upload::after {
+  content: 'Add photo (coming soon)';
+  font-size: .88rem;
+  font-weight: 800;
+}
+
+.trip-photo-upload input {
+  display: none !important;
+}
