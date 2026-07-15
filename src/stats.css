@@ -41,8 +41,28 @@
 .lifetime-strip strong { color: var(--forest); font-size: 1.3rem; }
 .lifetime-strip span { margin-top: 4px; color: var(--muted); font-size: .73rem; }
 
+.lifetime-pattern-heading { margin-top: 2px; }
+.stats-lifetime-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(360px, .65fr); gap: 16px; margin-bottom: 28px; }
+.lifetime-monthly-card .month-bar-chart { height: 225px; }
+.stats-card-note { margin: 14px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.45; }
+.weekday-card { min-width: 0; }
+.weekday-legend { display: flex; flex-wrap: wrap; gap: 14px; margin: -5px 0 14px; }
+.weekday-legend span { display: inline-flex; align-items: center; gap: 6px; color: #596960; font-size: .72rem; font-weight: 800; }
+.weekday-legend i { width: 11px; height: 11px; border-radius: 999px; }
+.weekday-legend i.check-in, .weekday-series.check-in i { background: var(--forest-2); }
+.weekday-legend i.check-out, .weekday-series.check-out i { background: #c3932e; }
+.weekday-chart { display: grid; gap: 10px; }
+.weekday-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 10px; }
+.weekday-name { color: var(--forest); font-size: .72rem; font-weight: 900; }
+.weekday-row-series { display: grid; gap: 5px; }
+.weekday-series { display: grid; grid-template-columns: minmax(0, 1fr) 24px; align-items: center; gap: 8px; }
+.weekday-track { height: 8px; overflow: hidden; border-radius: 999px; background: #edf2ed; }
+.weekday-track i { display: block; height: 100%; min-width: 0; border-radius: inherit; }
+.weekday-series strong { color: #53635a; font-size: .7rem; text-align: right; }
+
 @media (max-width: 1080px) {
   .stats-main-grid { grid-template-columns: 1fr; }
+  .stats-lifetime-grid { grid-template-columns: 1fr; }
   .record-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -64,7 +84,9 @@
 @media (max-width: 520px) {
   .stats-hero-card strong { font-size: 1.15rem; }
   .month-bar-chart { grid-template-columns: repeat(12, minmax(28px, 1fr)); }
+  .lifetime-monthly-card .month-bar-chart { height: 205px; }
   .home-coordinate-grid { grid-template-columns: 1fr; }
   .home-base-card .button-row { display: grid; }
   .lifetime-strip > div { padding: 14px; }
+  .weekday-row { grid-template-columns: 30px minmax(0, 1fr); gap: 7px; }
 }
