@@ -1,9 +1,10 @@
 import { seedState } from '../data/seed';
 import { DEFAULT_TENT_PROFILE } from './campers';
 import { DEFAULT_CHECKLIST_TEMPLATE } from './checklistDefaults';
+import { DEFAULT_EQUIPMENT_INVENTORY, normalizeEquipmentInventory } from './equipment';
 import { DEFAULT_HOME_BASE } from './geo';
 import { mergeParkProfiles } from './parks';
-import type { AppState, CamperProfile, Campsite, ChecklistTemplate, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist } from '../types';
+import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist } from '../types';
 
 const STORAGE_KEY = 'camp-ledger-state-v2-wishlist-only';
 
@@ -30,6 +31,7 @@ function normalizeState(state: AppState): AppState {
     parks: mergeParkProfiles(state.parks, sites, stays),
     checklistTemplate: state.checklistTemplate ?? structuredClone(DEFAULT_CHECKLIST_TEMPLATE),
     tripChecklists: state.tripChecklists ?? [],
+    equipmentInventory: normalizeEquipmentInventory(state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY),
     homeBase: state.homeBase ?? DEFAULT_HOME_BASE,
   };
 }
@@ -44,6 +46,7 @@ function cloneSeed(): AppState {
     campers: [DEFAULT_TENT_PROFILE],
     checklistTemplate: structuredClone(DEFAULT_CHECKLIST_TEMPLATE),
     tripChecklists: [],
+    equipmentInventory: structuredClone(DEFAULT_EQUIPMENT_INVENTORY),
     homeBase: DEFAULT_HOME_BASE,
   };
 }
@@ -59,7 +62,12 @@ export async function loadAppState(): Promise<{ state: AppState; mode: 'cloud' |
   try {
     const response = await fetch('/api/bootstrap', { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Bootstrap failed: ${response.status}`);
-    const state = normalizeState((await response.json()) as AppState);
+    const rawState = (await response.json()) as AppState;
+    try {
+      const equipmentResponse = await fetch('/api/settings/equipment', { headers: { Accept: 'application/json' } });
+      if (equipmentResponse.ok) rawState.equipmentInventory = await equipmentResponse.json() as EquipmentInventory;
+    } catch { /* equipment falls back to the local/default inventory */ }
+    const state = normalizeState(rawState);
     persistLocal(state);
     return { state, mode: 'cloud' };
   } catch {
@@ -119,6 +127,10 @@ export async function saveChecklistTemplateRemote(template: ChecklistTemplate): 
 
 export async function saveTripChecklistRemote(checklist: TripChecklist): Promise<void> {
   await request(`/api/checklists/trips/${encodeURIComponent(checklist.stayId)}`, { method: 'PUT', body: JSON.stringify(checklist) });
+}
+
+export async function saveEquipmentInventoryRemote(inventory: EquipmentInventory): Promise<void> {
+  await request('/api/settings/equipment', { method: 'PUT', body: JSON.stringify(inventory) });
 }
 
 export async function saveHomeBaseRemote(homeBase: HomeBase): Promise<void> {

@@ -1,5 +1,5 @@
 import { importBackup } from '../../_lib/importData';
-import type { Env } from '../../_lib/diary';
+import { saveSetting, type Env } from '../../_lib/diary';
 
 async function tableExists(db: D1Database, name: string): Promise<boolean> {
   const row = await db
@@ -48,7 +48,12 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
       }
     }
 
-    return await importBackup(env, await request.json<unknown>());
+    const backup = await request.json<unknown>();
+    const response = await importBackup(env, backup);
+    if (response.ok && backup && typeof backup === 'object' && 'equipmentInventory' in backup) {
+      await saveSetting(env.DB, 'equipment_inventory', (backup as { equipmentInventory?: unknown }).equipmentInventory ?? { items: [] });
+    }
+    return response;
   } catch (cause) {
     return Response.json(
       { error: cause instanceof Error ? cause.message : 'Unable to import the backup.' },

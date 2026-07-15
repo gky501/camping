@@ -9,6 +9,7 @@ import './trip-ui.css';
 import './campers.css';
 import './data-tools.css';
 import './checklists.css';
+import './equipment.css';
 import './stats.css';
 import './map-tools.css';
 import './mobile-refresh.css';

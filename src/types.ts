@@ -159,6 +159,20 @@ export interface TripChecklist {
   customSections: ChecklistSection[];
 }
 
+export type EquipmentCondition = 'good' | 'watch' | 'replace';
+
+export interface EquipmentItem {
+  id: string;
+  label: string;
+  condition: EquipmentCondition;
+  note?: string;
+  updatedAt?: string;
+}
+
+export interface EquipmentInventory {
+  items: EquipmentItem[];
+}
+
 export interface HomeBase {
   name: string;
   latitude: number;
@@ -173,6 +187,7 @@ export interface AppState {
   campers?: CamperProfile[];
   checklistTemplate?: ChecklistTemplate;
   tripChecklists?: TripChecklist[];
+  equipmentInventory?: EquipmentInventory;
   homeBase?: HomeBase;
 }
 
