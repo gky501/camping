@@ -1,0 +1,29 @@
+/* Navigation safeguards for the expanded feature set. */
+@media (min-width: 821px) and (max-width: 1550px) {
+  .app-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 0 14px;
+  }
+
+  .desktop-nav {
+    min-width: 0;
+    display: flex !important;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .desktop-nav::-webkit-scrollbar { display: none; }
+  .nav-button { flex: none; padding: 9px 10px; font-size: .78rem; }
+  .brand small { display: none; }
+  .mobile-nav { display: none !important; }
+}
+
+@media (min-width: 821px) and (max-width: 1320px) {
+  .profile-picker { display: none; }
+}
+
+@media (max-width: 820px) {
+  .mobile-nav button { flex-basis: 76px; min-width: 76px !important; }
+}
