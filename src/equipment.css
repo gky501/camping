@@ -45,8 +45,10 @@
 .equipment-manager-row.life-overdue { border-color: #e4a39e; background: #fff7f6; }
 .equipment-manager-item-copy { min-width: 0; }
 .equipment-manager-item-copy strong, .equipment-manager-item-copy span, .equipment-manager-item-copy small { display: block; }
-.equipment-manager-item-copy strong { color: var(--forest); font-size: 1rem; }
-.equipment-manager-item-copy span { margin-top: 4px; color: #56655c; font-size: .8rem; line-height: 1.4; }
+.equipment-name-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.equipment-name-line strong { color: var(--forest); font-size: 1rem; }
+.equipment-age-pill { display: inline-flex !important; align-items: center; width: fit-content; margin: 0 !important; padding: 4px 8px; border-radius: 999px; color: #28516d !important; background: #e5f1f8; font-size: .67rem !important; font-weight: 850; line-height: 1.2 !important; }
+.equipment-manager-item-copy > span { margin-top: 4px; color: #56655c; font-size: .8rem; line-height: 1.4; }
 .equipment-manager-item-copy small { margin-top: 3px; color: var(--muted); font-size: .68rem; line-height: 1.4; }
 .equipment-condition-field { display: grid; gap: 5px; }
 .equipment-condition-field > span { color: #59685f; font-size: .72rem; font-weight: 800; }
