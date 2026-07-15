@@ -1,4 +1,4 @@
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from './AuthGate';
 import { AdminAccountsLauncher } from './AdminAccountsLauncher';
@@ -21,11 +21,6 @@ export function HeaderUtilities() {
     openAccount();
   }
 
-  function handleMenuClick(event: MouseEvent<HTMLDivElement>) {
-    const target = event.target as HTMLElement;
-    if (target.closest('.data-launch-button, .admin-accounts-launcher')) setMenuOpen(false);
-  }
-
   return (
     <>
       {menuOpen && <button className="header-utility-scrim" type="button" aria-label="Close account menu" onClick={() => setMenuOpen(false)} />}
@@ -42,7 +37,7 @@ export function HeaderUtilities() {
           <ChevronDown className="header-utility-chevron" size={17} />
         </button>
 
-        <div className={menuOpen ? 'header-utility-menu open' : 'header-utility-menu'} role="menu" aria-hidden={!menuOpen} onClick={handleMenuClick}>
+        <div className={menuOpen ? 'header-utility-menu open' : 'header-utility-menu'} role="menu" aria-hidden={!menuOpen}>
           <div className="header-utility-menu-heading">
             <span><ShieldCheck size={18} /></span>
             <div><small>Signed in as</small><strong>{user.displayName}</strong><em>@{user.username}</em></div>
