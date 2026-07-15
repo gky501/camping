@@ -24,19 +24,16 @@ import './passport.css';
 import './navigation-v2.css';
 import './mobile-refresh.css';
 import './navigation-refresh.css';
+import './header-utilities.css';
 import App from './App';
-import { AccountLauncher } from './components/AccountLauncher';
-import { AdminAccountsLauncher } from './components/AdminAccountsLauncher';
 import { AuthGate } from './components/AuthGate';
-import { DataMigrationLauncher } from './components/DataMigrationLauncher';
+import { HeaderUtilities } from './components/HeaderUtilities';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthGate>
       <App />
-      <DataMigrationLauncher />
-      <AdminAccountsLauncher />
-      <AccountLauncher />
+      <HeaderUtilities />
     </AuthGate>
   </StrictMode>,
 );
