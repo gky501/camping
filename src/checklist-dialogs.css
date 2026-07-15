@@ -1,0 +1,131 @@
+.checklist-edit-dialog {
+  width: min(560px, 100%);
+  overflow: hidden;
+  background: #f8faf7;
+}
+
+.checklist-dialog-header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 15px;
+  padding: 24px 24px 20px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(145deg, #eef5ef, #fbfcfa);
+}
+
+.checklist-dialog-header h2 {
+  margin: 0 0 7px;
+  color: var(--forest);
+  font-size: clamp(1.45rem, 4vw, 2rem);
+  line-height: 1.05;
+}
+
+.checklist-dialog-header p:not(.eyebrow) {
+  max-width: 430px;
+  margin: 0;
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.5;
+}
+
+.checklist-dialog-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 15px;
+  color: white;
+  background: var(--forest);
+  box-shadow: 0 10px 24px rgba(23, 62, 49, .2);
+}
+
+.checklist-dialog-body {
+  padding: 22px 24px 8px;
+}
+
+.checklist-dialog-field {
+  margin-top: 0;
+}
+
+.checklist-dialog-field input {
+  min-height: 50px;
+  font-size: 1rem;
+  background: white;
+}
+
+.checklist-dialog-field input[aria-invalid='true'] {
+  border-color: #c95b52;
+  box-shadow: 0 0 0 3px rgba(185, 70, 63, .1);
+}
+
+.checklist-dialog-error {
+  margin: 7px 0 0;
+  color: #a1322d;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.checklist-dialog-help {
+  margin: 15px 0 0;
+  padding: 12px 13px;
+  border-radius: 12px;
+  color: #53645a;
+  background: #edf3ee;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.checklist-dialog-actions {
+  position: static;
+  margin-top: 14px;
+}
+
+.diary-checklist-button {
+  padding-top: 7px;
+}
+
+.trip-detail-actions .checklist-detail-button {
+  color: #fff;
+  background: var(--forest);
+}
+
+@media (max-width: 820px) {
+  .checklist-edit-dialog {
+    border-radius: 24px 24px 0 0;
+  }
+
+  .checklist-dialog-header {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    padding: 20px 17px 17px;
+  }
+
+  .checklist-dialog-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .checklist-dialog-body {
+    padding: 18px 17px 6px;
+  }
+
+  .checklist-dialog-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 15px 17px calc(15px + env(safe-area-inset-bottom));
+  }
+
+  .checklist-dialog-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .checklist-dialog-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .checklist-dialog-icon {
+    display: none;
+  }
+}
