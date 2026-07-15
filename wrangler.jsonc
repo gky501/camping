@@ -3,6 +3,9 @@
   "name": "campsite-diary",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-07-14",
+  "vars": {
+    "AUTH_MASTER_KEY_HASH": "f79634c9709121d54eceb14755cdbe3dfb399b9e992c4f795e42fc405748213d"
+  },
   "d1_databases": [
     {
       "binding": "DB",
