@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, BookOpen, Bookmark, ClipboardCheck, Cloud, CloudOff, Map, Plus, Settings2, TentTree, Trees, Truck } from 'lucide-react';
+import { BarChart3, BookOpen, Bookmark, ClipboardCheck, Cloud, CloudOff, Map, Menu, Plus, Settings2, TentTree, Truck, Trees, X } from 'lucide-react';
 import { CamperEditModal } from './components/CamperEditModal';
 import { CampersPanel } from './components/CampersPanel';
 import { CampsitesPanel } from './components/CampsitesPanel';
 import { ChecklistPanel } from './components/ChecklistPanel';
-import { DiaryPanel } from './components/DiaryPanel';
 import { MapPanel } from './components/MapPanel';
 import { ParkEditModal } from './components/ParkEditModal';
 import { ParksPanel } from './components/ParksPanel';
+import { PassportPanel } from './components/PassportPanel';
 import { PreferencesPanel } from './components/PreferencesPanel';
 import { StatsPanel } from './components/StatsPanel';
 import { StayModal } from './components/StayModal';
@@ -22,24 +22,28 @@ import { createId } from './lib/id';
 import { mergeParkProfiles, renameParkRecords } from './lib/parks';
 import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist, TripDetail, TripDetailsMap, WishlistSiteDraft } from './types';
 
-const tabs = [
-  { id: 'map', label: 'Map', icon: Map },
-  { id: 'diary', label: 'Diary', icon: BookOpen },
-  { id: 'checklist', label: 'Checklist', icon: ClipboardCheck },
-  { id: 'stats', label: 'Recap', icon: BarChart3 },
-  { id: 'parks', label: 'Parks', icon: Trees },
-  { id: 'campers', label: 'Campers', icon: Truck },
-  { id: 'wishlist', label: 'Wish list', icon: Bookmark },
-  { id: 'sites', label: 'Campsites', icon: TentTree },
-  { id: 'preferences', label: 'Preferences', icon: Settings2 },
-] as const;
+type TabId = 'passport' | 'places' | 'checklist' | 'stats' | 'campers' | 'wishlist' | 'preferences';
+type PlaceView = 'map' | 'parks' | 'sites';
 
-type TabId = (typeof tabs)[number]['id'];
+const primaryTabs = [
+  { id: 'passport' as const, label: 'Passport', icon: BookOpen },
+  { id: 'places' as const, label: 'Places', icon: Map },
+  { id: 'checklist' as const, label: 'Checklist', icon: ClipboardCheck },
+];
+
+const moreTabs = [
+  { id: 'wishlist' as const, label: 'Wish list', detail: 'Places you want to camp', icon: Bookmark },
+  { id: 'campers' as const, label: 'Campers', detail: 'Trailers, tents, and tow setups', icon: Truck },
+  { id: 'stats' as const, label: 'Detailed recap', detail: 'Charts, records, and lifetime patterns', icon: BarChart3 },
+  { id: 'preferences' as const, label: 'Preferences', detail: 'Scoring and profile settings', icon: Settings2 },
+];
 
 export default function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [mode, setMode] = useState<'cloud' | 'local'>('local');
-  const [tab, setTab] = useState<TabId>('map');
+  const [tab, setTab] = useState<TabId>('passport');
+  const [placeView, setPlaceView] = useState<PlaceView>('map');
+  const [moreOpen, setMoreOpen] = useState(false);
   const [activeProfileId, setActiveProfileId] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>();
   const [checklistStayId, setChecklistStayId] = useState<string>();
@@ -68,11 +72,14 @@ export default function App() {
     [activeProfileId, state],
   );
 
+  function openTab(nextTab: TabId) { setTab(nextTab); setMoreOpen(false); }
+  function openPlace(nextView: PlaceView = 'map') { setPlaceView(nextView); setTab('places'); setMoreOpen(false); }
   function openStay(site?: Campsite) { setEditingStay(undefined); setStaySite(site); setShowStayModal(true); }
   function openEditStay(stay: Stay) { setDashboardStay(undefined); setEditingStay(stay); setStaySite(state?.sites.find((site) => site.id === stay.siteId)); setShowStayModal(true); }
   function closeStayModal() { setShowStayModal(false); setStaySite(undefined); setEditingStay(undefined); }
   function selectSite(site: Campsite) { setSelectedSiteId(site.id); }
-  function openChecklistForStay(stay: Stay) { setDashboardStay(undefined); setChecklistStayId(stay.id); setTab('checklist'); }
+  function selectSiteOnMap(site: Campsite) { selectSite(site); openPlace('map'); }
+  function openChecklistForStay(stay: Stay) { setDashboardStay(undefined); setChecklistStayId(stay.id); openTab('checklist'); }
   function openDashboardForStay(stay: Stay) { setDashboardStay(stay); }
 
   function saveStay(draft: StayDraft) {
@@ -109,7 +116,7 @@ export default function App() {
 
     setState({ ...state, sites: nextSites, stays: nextStays, parks: nextParks });
     closeStayModal();
-    setTab('diary');
+    openTab('passport');
     void (async () => {
       if (draft.createSite) await createSiteRemote({ ...draft.createSite, status: 'visited' });
       else if (draft.updateSiteDetails) await saveSiteRemote({ ...draft.updateSiteDetails, status: 'visited' });
@@ -162,12 +169,12 @@ export default function App() {
     setState({ ...state, campers });
     setShowCamperModal(false);
     setCamperToEdit(undefined);
-    setTab('campers');
+    openTab('campers');
     (existing ? saveCamperRemote(camper) : createCamperRemote(camper)).catch(() => setMode('local'));
   }
   function deleteCamper(camper: CamperProfile) {
     if (!state || camper.id === 'camper-tent') return;
-    if (!window.confirm(`Delete the camper profile “${camper.name}”? Trips will remain in the diary but will no longer be tagged to this camper.`)) return;
+    if (!window.confirm(`Delete the camper profile “${camper.name}”? Trips will remain in the Passport but will no longer be tagged to this camper.`)) return;
     setState({ ...state, campers: (state.campers ?? []).filter((item) => item.id !== camper.id), stays: state.stays.map((stay) => stay.camperId === camper.id ? { ...stay, camperId: undefined } : stay) });
     deleteCamperRemote(camper.id).catch(() => setMode('local'));
   }
@@ -188,13 +195,13 @@ export default function App() {
     if (wishlistSite) {
       const updated: Campsite = { ...wishlistSite, ...draft, status: 'wishlist' };
       setState({ ...state, sites: state.sites.map((site) => site.id === updated.id ? updated : site) });
-      setSelectedSiteId(updated.id); setWishlistSite(undefined); setShowWishlistModal(false); setTab('wishlist');
+      setSelectedSiteId(updated.id); setWishlistSite(undefined); setShowWishlistModal(false); openTab('wishlist');
       saveSiteRemote(updated).catch(() => setMode('local'));
       return;
     }
     const site: Campsite = { id: createId('site'), ...draft, viewTypes: [], currentFacts: {}, seasonalRatings: {}, legacyStayCount: 0, favorite: false, status: 'wishlist' };
     setState({ ...state, sites: [...state.sites, site] });
-    setSelectedSiteId(site.id); setWishlistSite(undefined); setShowWishlistModal(false); setTab('wishlist');
+    setSelectedSiteId(site.id); setWishlistSite(undefined); setShowWishlistModal(false); openTab('wishlist');
     createSiteRemote(site).catch(() => setMode('local'));
   }
   function deleteWishlistSite(site: Campsite) {
@@ -215,7 +222,7 @@ export default function App() {
   function duplicateProfile(profile: PreferenceProfile) { saveProfile({ ...structuredClone(profile), id: createId('profile'), name: `${profile.name.trim() || 'Preference profile'} copy` }); }
   function deleteProfile(profile: PreferenceProfile) {
     if (!state || state.profiles.length <= 1) return;
-    if (!window.confirm(`Delete the preference profile “${profile.name}”? Campsite reviews and diary entries will not be deleted.`)) return;
+    if (!window.confirm(`Delete the preference profile “${profile.name}”? Campsite reviews and Passport entries will not be deleted.`)) return;
     const profiles = state.profiles.filter((item) => item.id !== profile.id);
     setState({ ...state, profiles }); setActiveProfileId(profiles[0]?.id ?? ''); deleteProfileRemote(profile.id).catch(() => setMode('local'));
   }
@@ -257,31 +264,53 @@ export default function App() {
 
   if (!state || !activeProfile) return <div className="loading-screen"><TentTree size={42} /><strong>Loading your campsites…</strong></div>;
 
+  const moreActive = moreTabs.some((item) => item.id === tab);
+
   return (
-    <div className="app-shell">
-      <header className="app-header">
-        <button className="brand" onClick={() => setTab('map')}><span className="brand-mark"><TentTree /></span><span><strong>Camp Ledger</strong><small>Map · ratings · camping diary</small></span></button>
-        <nav className="desktop-nav" aria-label="Primary navigation">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? 'nav-button active' : 'nav-button'} onClick={() => setTab(id)}><Icon size={18} /> {label}</button>)}</nav>
+    <div className="app-shell app-shell-v2">
+      <header className="app-header app-header-v2">
+        <button className="brand" onClick={() => openTab('passport')}><span className="brand-mark"><TentTree /></span><span><strong>Camp Ledger</strong><small>Your camping passport</small></span></button>
+        <nav className="desktop-nav primary-nav-v2" aria-label="Primary navigation">
+          {primaryTabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? 'nav-button active' : 'nav-button'} onClick={() => openTab(id)}><Icon size={18} /> {label}</button>)}
+          <button className={moreActive || moreOpen ? 'nav-button active' : 'nav-button'} onClick={() => setMoreOpen((open) => !open)}><Menu size={18} /> More</button>
+        </nav>
         <div className="header-actions">
           <label className="profile-picker"><span>Viewing as</span><select value={activeProfile.id} onChange={(event) => setActiveProfileId(event.target.value)}>{state.profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.name}</option>)}</select></label>
           <span className={`sync-status ${mode}`} title={mode === 'cloud' ? 'Connected to Cloudflare D1' : 'Using browser storage until D1 is connected'}>{mode === 'cloud' ? <Cloud size={16} /> : <CloudOff size={16} />}{mode === 'cloud' ? 'Cloud' : 'Local demo'}</span>
-          <button className="primary-button header-add" onClick={() => openStay()}><Plus size={18} /> Log a stay</button>
+          <button className="primary-button header-add" onClick={() => openStay()}><Plus size={18} /> Add trip</button>
         </div>
       </header>
 
+      {moreOpen && <div className="more-menu-backdrop" role="presentation" onMouseDown={() => setMoreOpen(false)}>
+        <aside className="more-menu-card" aria-label="More Camp Ledger sections" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="more-menu-heading"><div><p className="eyebrow">More</p><h3>Camp Ledger tools</h3></div><button className="icon-button" onClick={() => setMoreOpen(false)} aria-label="Close"><X /></button></div>
+          {moreTabs.map(({ id, label, detail, icon: Icon }) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => openTab(id)}><span><Icon /></span><div><strong>{label}</strong><small>{detail}</small></div></button>)}
+        </aside>
+      </div>}
+
       <main className="app-main">
-        {tab === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} />}
-        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} onDelete={deleteStay} onChecklist={openChecklistForStay} onDashboard={openDashboardForStay} />}
+        {tab === 'passport' && <PassportPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} onDelete={deleteStay} onChecklist={openChecklistForStay} onDashboard={openDashboardForStay} onOpenRecap={() => openTab('stats')} />}
+        {tab === 'places' && <>
+          <nav className="places-subnav" aria-label="Places views">
+            <button className={placeView === 'map' ? 'active' : ''} onClick={() => setPlaceView('map')}><Map size={17} /> Map</button>
+            <button className={placeView === 'parks' ? 'active' : ''} onClick={() => setPlaceView('parks')}><Trees size={17} /> Parks</button>
+            <button className={placeView === 'sites' ? 'active' : ''} onClick={() => setPlaceView('sites')}><TentTree size={17} /> Campsites</button>
+          </nav>
+          {placeView === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} />}
+          {placeView === 'parks' && <ParksPanel parks={state.parks ?? []} sites={state.sites} stays={state.stays} profile={activeProfile} onEdit={setParkToEdit} onSelectSite={selectSiteOnMap} onLogStay={openStay} />}
+          {placeView === 'sites' && <CampsitesPanel sites={state.sites} stays={state.stays} profile={activeProfile} onSelect={selectSiteOnMap} onLogStay={openStay} />}
+        </>}
         {tab === 'checklist' && <ChecklistPanel sites={state.sites} stays={state.stays} template={state.checklistTemplate ?? DEFAULT_CHECKLIST_TEMPLATE} tripChecklists={state.tripChecklists ?? []} equipmentInventory={state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY} initialStayId={checklistStayId} onSaveTemplate={saveChecklistTemplate} onSaveTripChecklist={saveTripChecklist} onSaveEquipmentInventory={saveEquipmentInventory} />}
         {tab === 'stats' && <StatsPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} profile={activeProfile} homeBase={state.homeBase ?? DEFAULT_HOME_BASE} onSaveHomeBase={saveHomeBase} />}
-        {tab === 'parks' && <ParksPanel parks={state.parks ?? []} sites={state.sites} stays={state.stays} profile={activeProfile} onEdit={setParkToEdit} onSelectSite={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} />}
         {tab === 'campers' && <CampersPanel campers={state.campers ?? []} stays={state.stays} sites={state.sites} onAdd={() => openCamper()} onEdit={openCamper} onDelete={deleteCamper} />}
-        {tab === 'wishlist' && <WishlistPanel sites={state.sites} stays={state.stays} profile={activeProfile} onSelect={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} onAdd={() => openWishlist()} onEdit={openWishlist} onDelete={deleteWishlistSite} />}
-        {tab === 'sites' && <CampsitesPanel sites={state.sites} stays={state.stays} profile={activeProfile} onSelect={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} />}
+        {tab === 'wishlist' && <WishlistPanel sites={state.sites} stays={state.stays} profile={activeProfile} onSelect={selectSiteOnMap} onLogStay={openStay} onAdd={() => openWishlist()} onEdit={openWishlist} onDelete={deleteWishlistSite} />}
         {tab === 'preferences' && <PreferencesPanel profile={activeProfile} canDelete={state.profiles.length > 1} onSave={saveProfile} onDuplicate={duplicateProfile} onDelete={deleteProfile} />}
       </main>
 
-      <nav className="mobile-nav" aria-label="Mobile navigation">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>
+      <nav className="mobile-nav mobile-nav-v2" aria-label="Mobile navigation">
+        {primaryTabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => openTab(id)}><Icon size={20} /><span>{label}</span></button>)}
+        <button className={moreActive || moreOpen ? 'active' : ''} onClick={() => setMoreOpen(true)}><Menu size={20} /><span>More</span></button>
+      </nav>
 
       {showStayModal && <StayModal sites={state.sites} campers={state.campers ?? []} initialSite={staySite} initialStay={editingStay} onClose={closeStayModal} onSave={saveStay} />}
       {dashboardStay && <TripDashboardModal stay={dashboardStay} site={state.sites.find((site) => site.id === dashboardStay.siteId)} camper={(state.campers ?? []).find((camper) => camper.id === dashboardStay.camperId)} equipmentInventory={state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY} detail={state.tripDetails?.[dashboardStay.id]} onSaveDetail={(detail) => saveTripDetail(dashboardStay.id, detail)} onChecklist={() => openChecklistForStay(dashboardStay)} onEdit={() => openEditStay(dashboardStay)} onClose={() => setDashboardStay(undefined)} />}

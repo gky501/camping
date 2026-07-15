@@ -19,10 +19,14 @@ import './map-markers.css';
 import './trip-dashboard.css';
 import './auth.css';
 import './account-launcher.css';
+import './admin-accounts.css';
+import './passport.css';
+import './navigation-v2.css';
 import './mobile-refresh.css';
 import './navigation-refresh.css';
 import App from './App';
 import { AccountLauncher } from './components/AccountLauncher';
+import { AdminAccountsLauncher } from './components/AdminAccountsLauncher';
 import { AuthGate } from './components/AuthGate';
 import { DataMigrationLauncher } from './components/DataMigrationLauncher';
 
@@ -31,6 +35,7 @@ createRoot(document.getElementById('root')!).render(
     <AuthGate>
       <App />
       <DataMigrationLauncher />
+      <AdminAccountsLauncher />
       <AccountLauncher />
     </AuthGate>
   </StrictMode>,
