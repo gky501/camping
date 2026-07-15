@@ -56,12 +56,12 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
     years.add(currentYear);
     return [...years].sort((a, b) => b - a);
   }, [currentYear, stays]);
-  const [year, setYear] = useState(availableYears.includes(currentYear) ? currentYear : availableYears[0]);
+  const [year, setYear] = useState<number>(availableYears.includes(currentYear) ? currentYear : (availableYears[0] ?? currentYear));
   const [homeDraft, setHomeDraft] = useState(homeBase);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => setHomeDraft(homeBase), [homeBase]);
-  useEffect(() => { if (!availableYears.includes(year)) setYear(availableYears[0]); }, [availableYears, year]);
+  useEffect(() => { if (!availableYears.includes(year)) setYear(availableYears[0] ?? currentYear); }, [availableYears, currentYear, year]);
 
   const yearStays = useMemo(() => stays.filter((stay) => Number(stay.arrivalDate.slice(0, 4)) === year), [stays, year]);
   const yearStats = useMemo(() => {
@@ -180,6 +180,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
 
   const maxMonthlyNights = Math.max(...yearStats.monthlyNights, 1);
   const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const hasFurthestDestination = Boolean(records.furthestStay && records.furthestStay.distance >= 0);
 
   return (
     <section className="content-page stats-page">
@@ -226,7 +227,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
         <article className="record-card"><span className="record-icon"><TentTree /></span><div><small>Most-stayed campsite</small><strong>{siteLabel(records.mostStayedSite?.location)}</strong><p>{records.mostStayedSite ? `${records.mostStayedSite.stays.length} stays · ${records.mostStayedSite.stays.reduce((sum, stay) => sum + stay.nights, 0)} nights` : 'No trips yet'}</p></div></article>
         <article className="record-card"><span className="record-icon"><MapPin /></span><div><small>Most-visited park</small><strong>{parkLabel(records.mostVisitedPark?.location)}</strong><p>{records.mostVisitedPark ? `${records.mostVisitedPark.stays.length} stays · ${records.mostVisitedPark.stays.reduce((sum, stay) => sum + stay.nights, 0)} nights` : 'No trips yet'}</p></div></article>
         <article className="record-card"><span className="record-icon"><Trophy /></span><div><small>Favorite park by rating</small><strong>{parkLabel(records.favoritePark?.group.location)}</strong><p>{records.favoritePark ? `${formatScore(records.favoritePark.score)} average site score` : 'Rate more campsites to unlock'}</p></div></article>
-        <article className="record-card"><span className="record-icon"><Navigation /></span><div><small>Farthest destination</small><strong>{siteLabel(records.furthestStay?.location)}</strong><p>{records.furthestStay?.distance >= 0 ? `${Math.round(records.furthestStay.distance).toLocaleString()} miles from ${homeBase.name}` : 'No destination coordinates yet'}</p></div></article>
+        <article className="record-card"><span className="record-icon"><Navigation /></span><div><small>Farthest destination</small><strong>{siteLabel(records.furthestStay?.location)}</strong><p>{hasFurthestDestination && records.furthestStay ? `${Math.round(records.furthestStay.distance).toLocaleString()} miles from ${homeBase.name}` : 'No destination coordinates yet'}</p></div></article>
         <article className="record-card"><span className="record-icon"><Truck /></span><div><small>Most-used camper</small><strong>{records.topCamper?.name ?? 'No camper assigned'}</strong><p>{records.topCamperStays.length ? `${records.topCamperStays.length} trips · ${records.topCamperStays.reduce((sum, stay) => sum + stay.nights, 0)} nights` : 'Assign campers to trips to unlock'}</p></div></article>
         <article className="record-card"><span className="record-icon"><Moon /></span><div><small>Longest trip</small><strong>{records.longestStay ? `${records.longestStay.nights} nights at ${siteLabel(locationForStay(records.longestStay, sites))}` : 'No trips yet'}</strong><p>{records.longestStay ? `${formatDate(records.longestStay.arrivalDate)} – ${formatDate(records.longestStay.departureDate)}` : ''}</p></div></article>
       </div>
