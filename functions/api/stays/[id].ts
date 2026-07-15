@@ -25,6 +25,7 @@ export const onRequestDelete: PagesFunction<Env> = async ({ env, request, params
     const deleteOrphanSite = new URL(request.url).searchParams.get('deleteOrphanSite') === 'true' && isOrphan;
 
     const statements: D1PreparedStatement[] = [
+      env.DB.prepare('DELETE FROM trip_checklists WHERE stay_id=?').bind(id),
       env.DB.prepare('DELETE FROM stay_observations WHERE stay_id=?').bind(id),
       env.DB.prepare('DELETE FROM site_fact_history WHERE stay_id=?').bind(id),
       env.DB.prepare('DELETE FROM stays WHERE id=?').bind(id),
