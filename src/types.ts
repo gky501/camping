@@ -174,6 +174,7 @@ export interface EquipmentItem {
   label: string;
   condition: EquipmentCondition;
   note?: string;
+  inServiceDate?: string;
   updatedAt?: string;
   replacementIntervalMonths?: number;
   lastReplacedDate?: string;
