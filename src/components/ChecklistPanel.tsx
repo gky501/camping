@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardCheck, ListPlus, PackageCheck, Plus, Settings2, Trash2, Wrench } from 'lucide-react';
-import { equipmentConditionLabel } from '../lib/equipment';
+import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardCheck, ListPlus, Plus, Settings2, Trash2, Wrench } from 'lucide-react';
+import { EquipmentManager } from './EquipmentManager';
+import {
+  equipmentConditionLabel,
+  equipmentLifeInfo,
+  equipmentLifeStatusLabel,
+  formatEquipmentDate,
+} from '../lib/equipment';
 import { createId } from '../lib/id';
-import type { Campsite, ChecklistSection, ChecklistTemplate, EquipmentCondition, EquipmentInventory, EquipmentItem, Stay, TripChecklist } from '../types';
+import type { Campsite, ChecklistSection, ChecklistTemplate, EquipmentInventory, Stay, TripChecklist } from '../types';
 
 const EQUIPMENT_SECTION_ID = 'equipment-inventory';
 
@@ -31,13 +37,6 @@ function stayLabel(stay: Stay, sites: Campsite[]): string {
 
 function sectionItemCount(sections: ChecklistSection[]): number {
   return sections.reduce((total, section) => total + section.items.length, 0);
-}
-
-function formatEquipmentUpdated(value?: string): string {
-  if (!value) return 'Condition not updated yet';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Condition updated';
-  return `Updated ${new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date)}`;
 }
 
 export function ChecklistPanel({
@@ -87,8 +86,11 @@ export function ChecklistPanel({
   const totalItems = allItemIds.length;
   const completedItems = checkedIds.size;
   const progress = totalItems ? Math.round((completedItems / totalItems) * 100) : 0;
-  const replacementItems = equipmentInventory.items.filter((item) => item.condition === 'replace');
-  const watchItems = equipmentInventory.items.filter((item) => item.condition === 'watch');
+  const equipmentStatuses = equipmentInventory.items.map((item) => ({ item, life: equipmentLifeInfo(item) }));
+  const urgentEquipment = equipmentStatuses.filter(({ item, life }) => item.condition === 'replace' || life.status === 'overdue');
+  const attentionEquipment = equipmentStatuses.filter(({ item, life }) =>
+    !urgentEquipment.some((entry) => entry.item.id === item.id)
+    && (item.condition === 'watch' || life.status === 'nearing'));
 
   function saveTrip(next: TripChecklist) {
     onSaveTripChecklist({
@@ -205,47 +207,13 @@ export function ChecklistPanel({
     updateTemplateSection(section.id, { items: section.items.filter((item) => item.id !== itemId) });
   }
 
-  function saveEquipmentItems(items: EquipmentItem[]) {
-    onSaveEquipmentInventory({ items });
-  }
-
-  function addEquipmentItem() {
-    const label = window.prompt('Equipment name:')?.trim();
-    if (!label) return;
-    saveEquipmentItems([
-      ...equipmentInventory.items,
-      { id: createId('equipment'), label, condition: 'good', updatedAt: new Date().toISOString() },
-    ]);
-  }
-
-  function editEquipmentItem(item: EquipmentItem) {
-    const label = window.prompt('Equipment name:', item.label)?.trim();
-    if (!label) return;
-    const note = window.prompt('Optional condition note:', item.note ?? '')?.trim();
-    if (note === undefined) return;
-    saveEquipmentItems(equipmentInventory.items.map((entry) => entry.id === item.id
-      ? { ...entry, label, note: note || undefined, updatedAt: new Date().toISOString() }
-      : entry));
-  }
-
-  function updateEquipmentCondition(item: EquipmentItem, condition: EquipmentCondition) {
-    saveEquipmentItems(equipmentInventory.items.map((entry) => entry.id === item.id
-      ? { ...entry, condition, updatedAt: new Date().toISOString() }
-      : entry));
-  }
-
-  function deleteEquipmentItem(item: EquipmentItem) {
-    if (!window.confirm(`Delete “${item.label}” from your equipment list?`)) return;
-    saveEquipmentItems(equipmentInventory.items.filter((entry) => entry.id !== item.id));
-  }
-
   return (
     <section className="content-page checklist-page">
       <div className="page-heading checklist-heading">
         <div>
           <p className="eyebrow">Pack it once. Customize every trip.</p>
           <h2>Camping checklist</h2>
-          <p>Maintain standard packing items, track equipment condition, and add trip-only sections for special plans.</p>
+          <p>Maintain standard packing items, track equipment condition and lifespan, and add trip-only sections for special plans.</p>
         </div>
         <div className="checklist-mode-switch" role="group" aria-label="Checklist view">
           <button className={mode === 'trip' ? 'active' : ''} onClick={() => setMode('trip')}><ClipboardCheck size={17} /> Trip checklist</button>
@@ -269,19 +237,33 @@ export function ChecklistPanel({
               <button className="primary-button" onClick={addTripSection}><ListPlus size={17} /> Add trip section</button>
             </div>
 
-            {replacementItems.length > 0 && (
+            {urgentEquipment.length > 0 && (
               <div className="equipment-trip-alert replacement-alert">
                 <span className="equipment-alert-icon"><AlertTriangle /></span>
                 <div>
-                  <strong>{replacementItems.length === 1 ? 'Equipment needs to be replaced' : `${replacementItems.length} equipment items need to be replaced`}</strong>
-                  {replacementItems.map((item) => <p key={item.id}>{item.label.toUpperCase()} NEEDS TO BE REPLACED{item.note ? ` — ${item.note}` : ''}</p>)}
+                  <strong>{urgentEquipment.length === 1 ? 'Equipment needs attention before this trip' : `${urgentEquipment.length} equipment items need attention before this trip`}</strong>
+                  {urgentEquipment.map(({ item, life }) => (
+                    <p key={item.id}>
+                      {item.label.toUpperCase()} {item.condition === 'replace' ? 'NEEDS TO BE REPLACED' : `REPLACEMENT OVERDUE — DUE ${formatEquipmentDate(life.nextDueDate).toUpperCase()}`}
+                      {item.note ? ` — ${item.note}` : ''}
+                    </p>
+                  ))}
                 </div>
                 <button className="secondary-button" onClick={() => setMode('equipment')}>Review equipment</button>
               </div>
             )}
 
-            {watchItems.length > 0 && (
-              <div className="equipment-watch-summary"><AlertTriangle size={17} /><span><strong>{watchItems.length}</strong> equipment item{watchItems.length === 1 ? '' : 's'} marked Watch</span><button className="text-button" onClick={() => setMode('equipment')}>Review</button></div>
+            {attentionEquipment.length > 0 && (
+              <div className="equipment-watch-summary equipment-attention-summary">
+                <AlertTriangle size={17} />
+                <div>
+                  <strong>{attentionEquipment.length} equipment item{attentionEquipment.length === 1 ? '' : 's'} to watch</strong>
+                  {attentionEquipment.map(({ item, life }) => (
+                    <span key={item.id}>{item.label} — {life.status === 'nearing' ? `nearing end of life, due ${formatEquipmentDate(life.nextDueDate)}` : 'condition marked Watch'}</span>
+                  ))}
+                </div>
+                <button className="text-button" onClick={() => setMode('equipment')}>Review</button>
+              </div>
             )}
 
             <div className="checklist-progress-card">
@@ -308,18 +290,31 @@ export function ChecklistPanel({
                     <div className="checklist-items">
                       {visibleItems.map((item) => {
                         const equipmentItem = isEquipment ? equipmentInventory.items.find((entry) => entry.id === item.id) : undefined;
+                        const life = equipmentItem ? equipmentLifeInfo(equipmentItem) : undefined;
+                        const itemMessage = equipmentItem?.condition === 'replace'
+                          ? 'NEEDS TO BE REPLACED'
+                          : life?.status === 'overdue'
+                            ? `REPLACEMENT OVERDUE — DUE ${formatEquipmentDate(life.nextDueDate).toUpperCase()}`
+                            : life?.status === 'nearing'
+                              ? `Nearing end of life — due ${formatEquipmentDate(life.nextDueDate)}`
+                              : equipmentItem?.condition === 'watch'
+                                ? `Condition: Watch${equipmentItem.note ? ` — ${equipmentItem.note}` : ''}`
+                                : equipmentItem?.note;
                         return (
-                          <div className={`checklist-item ${checkedIds.has(item.id) ? 'checked' : ''} ${equipmentItem ? `equipment-checklist-item equipment-${equipmentItem.condition}` : ''}`} key={item.id}>
+                          <div className={`checklist-item ${checkedIds.has(item.id) ? 'checked' : ''} ${equipmentItem ? `equipment-checklist-item equipment-${equipmentItem.condition} life-${life?.status ?? 'none'}` : ''}`} key={item.id}>
                             <label>
                               <input type="checkbox" checked={checkedIds.has(item.id)} onChange={() => toggleItem(item.id)} />
                               <span className="checklist-item-copy">
                                 <strong>{item.label}</strong>
-                                {equipmentItem?.condition === 'replace' && <small>NEEDS TO BE REPLACED</small>}
-                                {equipmentItem?.condition === 'watch' && <small>Condition: Watch{equipmentItem.note ? ` — ${equipmentItem.note}` : ''}</small>}
-                                {equipmentItem?.condition === 'good' && equipmentItem.note && <small>{equipmentItem.note}</small>}
+                                {itemMessage && <small>{itemMessage}</small>}
                               </span>
                             </label>
-                            {equipmentItem && <span className={`equipment-condition-pill ${equipmentItem.condition}`}>{equipmentConditionLabel(equipmentItem.condition)}</span>}
+                            {equipmentItem && (
+                              <div className="equipment-status-pills checklist-equipment-pills">
+                                <span className={`equipment-condition-pill ${equipmentItem.condition}`}>{equipmentConditionLabel(equipmentItem.condition)}</span>
+                                {life && (life.status === 'nearing' || life.status === 'overdue') && <span className={`equipment-life-pill ${life.status}`}>{equipmentLifeStatusLabel(life.status)}</span>}
+                              </div>
+                            )}
                             {isCustom && <div className="checklist-item-actions"><button title="Rename item" onClick={() => renameTripItem(section, item.id, item.label)}>Edit</button><button title="Delete item" onClick={() => deleteTripItem(section, item.id)}><Trash2 size={15} /></button></div>}
                           </div>
                         );
@@ -327,7 +322,7 @@ export function ChecklistPanel({
                       {!visibleItems.length && <p className="checklist-empty-section">{section.items.length ? 'Everything in this section is packed.' : 'No items yet.'}</p>}
                     </div>
                     {isCustom && <div className="checklist-section-actions"><button className="text-button" onClick={() => addTripItem(section)}><Plus size={15} /> Add item</button><button className="text-button" onClick={() => renameTripSection(section)}>Rename</button><button className="text-button destructive-text-button" onClick={() => deleteTripSection(section)}>Delete section</button></div>}
-                    {isEquipment && <div className="checklist-section-actions"><button className="text-button" onClick={() => setMode('equipment')}><Wrench size={15} /> Manage conditions</button></div>}
+                    {isEquipment && <div className="checklist-section-actions"><button className="text-button" onClick={() => setMode('equipment')}><Wrench size={15} /> Manage equipment</button></div>}
                   </article>
                 );
               })}
@@ -358,47 +353,7 @@ export function ChecklistPanel({
           </div>
         </>
       ) : (
-        <>
-          <div className="equipment-manager-banner">
-            <div className="equipment-manager-copy">
-              <span className="equipment-manager-icon"><PackageCheck /></span>
-              <div>
-                <strong>{equipmentInventory.items.length} equipment item{equipmentInventory.items.length === 1 ? '' : 's'}</strong>
-                <span>Equipment appears automatically on every trip checklist. Items marked Needs replaced create a red warning until their condition is updated.</span>
-              </div>
-            </div>
-            <button className="primary-button" onClick={addEquipmentItem}><Plus size={17} /> Add equipment</button>
-          </div>
-
-          {equipmentInventory.items.length ? (
-            <div className="equipment-manager-list">
-              {equipmentInventory.items.map((item) => (
-                <article className={`equipment-manager-row equipment-${item.condition}`} key={item.id}>
-                  <div className="equipment-manager-item-copy">
-                    <strong>{item.label}</strong>
-                    <span>{item.note || formatEquipmentUpdated(item.updatedAt)}</span>
-                    {item.note && <small>{formatEquipmentUpdated(item.updatedAt)}</small>}
-                  </div>
-                  <label className="equipment-condition-field">
-                    <span>Condition</span>
-                    <select value={item.condition} onChange={(event) => updateEquipmentCondition(item, event.target.value as EquipmentCondition)}>
-                      <option value="good">Good</option>
-                      <option value="watch">Watch</option>
-                      <option value="replace">Needs replaced</option>
-                    </select>
-                  </label>
-                  <span className={`equipment-condition-pill ${item.condition}`}>{equipmentConditionLabel(item.condition)}</span>
-                  <div className="equipment-row-actions">
-                    <button className="secondary-button" onClick={() => editEquipmentItem(item)}>Edit</button>
-                    <button className="danger-button" onClick={() => deleteEquipmentItem(item)}><Trash2 size={16} /> Delete</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state equipment-empty-state"><Wrench size={42} /><h3>Add your camping equipment</h3><p>Track hoses, surge protectors, cords, chocks, tools, and anything else that may need maintenance or replacement between trips.</p><button className="primary-button" onClick={addEquipmentItem}><Plus size={17} /> Add first equipment item</button></div>
-          )}
-        </>
+        <EquipmentManager inventory={equipmentInventory} onSave={onSaveEquipmentInventory} />
       )}
     </section>
   );

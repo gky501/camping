@@ -160,6 +160,14 @@ export interface TripChecklist {
 }
 
 export type EquipmentCondition = 'good' | 'watch' | 'replace';
+export type EquipmentLogAction = 'replaced' | 'repaired' | 'serviced' | 'cleaned' | 'inspected';
+
+export interface EquipmentLogEntry {
+  id: string;
+  action: EquipmentLogAction;
+  date: string;
+  note?: string;
+}
 
 export interface EquipmentItem {
   id: string;
@@ -167,6 +175,9 @@ export interface EquipmentItem {
   condition: EquipmentCondition;
   note?: string;
   updatedAt?: string;
+  replacementIntervalMonths?: number;
+  lastReplacedDate?: string;
+  log?: EquipmentLogEntry[];
 }
 
 export interface EquipmentInventory {

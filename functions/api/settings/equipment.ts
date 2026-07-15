@@ -1,6 +1,11 @@
 import { ensureDiarySchema, error, saveSetting, type Env, type JsonObject } from '../../_lib/diary';
 
 const VALID_CONDITIONS = new Set(['good', 'watch', 'replace']);
+const VALID_ACTIONS = new Set(['replaced', 'repaired', 'serviced', 'cleaned', 'inspected']);
+
+function validDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T12:00:00`).getTime());
+}
 
 function normalizeInventory(value: unknown) {
   const body = value && typeof value === 'object' ? value as JsonObject : {};
@@ -13,12 +18,32 @@ function normalizeInventory(value: unknown) {
       const label = String(item.label || '').trim();
       if (!id || !label) return [];
       const condition = String(item.condition || 'good');
+      const interval = Number(item.replacementIntervalMonths);
+      const lastReplacedDate = String(item.lastReplacedDate || '').trim();
+      const rawLog = Array.isArray(item.log) ? item.log : [];
+      const log = rawLog.flatMap((rawEntry) => {
+        if (!rawEntry || typeof rawEntry !== 'object') return [];
+        const entry = rawEntry as JsonObject;
+        const entryId = String(entry.id || '').trim();
+        const action = String(entry.action || '').trim();
+        const date = String(entry.date || '').trim();
+        if (!entryId || !VALID_ACTIONS.has(action) || !validDate(date)) return [];
+        return [{
+          id: entryId,
+          action,
+          date,
+          note: String(entry.note || '').trim() || undefined,
+        }];
+      }).sort((a, b) => b.date.localeCompare(a.date));
       return [{
         id,
         label,
         condition: VALID_CONDITIONS.has(condition) ? condition : 'good',
         note: String(item.note || '').trim() || undefined,
         updatedAt: String(item.updatedAt || '').trim() || undefined,
+        replacementIntervalMonths: Number.isFinite(interval) && interval > 0 ? Math.round(interval) : undefined,
+        lastReplacedDate: validDate(lastReplacedDate) ? lastReplacedDate : undefined,
+        log,
       }];
     }),
   };
