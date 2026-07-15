@@ -12,6 +12,7 @@ import './checklists.css';
 import './stats.css';
 import './map-tools.css';
 import './mobile-refresh.css';
+import './navigation-refresh.css';
 import App from './App';
 import { DataMigrationLauncher } from './components/DataMigrationLauncher';
 
