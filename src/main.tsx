@@ -26,6 +26,7 @@ import './mobile-refresh.css';
 import './navigation-refresh.css';
 import './header-utilities.css';
 import './photo-coming-soon.css';
+import './header-cleanup.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';

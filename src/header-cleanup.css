@@ -1,0 +1,16 @@
+.app-header-v2 .profile-picker {
+  display: none !important;
+}
+
+/* The account menu is mounted outside the header, so reserve its full width. */
+@media (min-width: 1181px) {
+  .app-header-v2 .header-actions {
+    padding-right: 190px;
+  }
+}
+
+@media (min-width: 821px) and (max-width: 1180px) {
+  .app-header-v2 .header-actions {
+    padding-right: 58px;
+  }
+}
