@@ -101,14 +101,13 @@ function createSiteIcon(score: number | null, selected: boolean, wishlist: boole
 
 function createClusterIcon(cluster: SiteCluster) {
   const wishlistOnly = cluster.sites.every((site) => site.status === 'wishlist');
-  const selected = cluster.sites.some((site) => site.id === undefined);
   const visualSize = wishlistOnly
     ? Math.min(38, 28 + cluster.sites.length * 2)
     : Math.min(52, 40 + cluster.sites.length * 2);
   const shellSize = visualSize + 10;
   return L.divIcon({
     className: 'map-cluster-marker-shell',
-    html: `<div class="map-cluster-marker ${wishlistOnly ? 'wishlist-only' : 'visited-cluster'} ${selected ? 'selected' : ''}" style="width:${visualSize}px;height:${visualSize}px" aria-label="${cluster.sites.length} campsites"><strong>${cluster.sites.length}</strong></div>`,
+    html: `<div class="map-cluster-marker ${wishlistOnly ? 'wishlist-only' : 'visited-cluster'}" style="width:${visualSize}px;height:${visualSize}px" aria-label="${cluster.sites.length} campsites"><strong>${cluster.sites.length}</strong></div>`,
     iconSize: [shellSize, shellSize],
     iconAnchor: [shellSize / 2, shellSize / 2],
     popupAnchor: [0, -(visualSize / 2)],
@@ -116,7 +115,12 @@ function createClusterIcon(cluster: SiteCluster) {
 }
 
 function locationLabel(site: Campsite): string {
-  const parts = [site.area, site.loop ? `Loop ${site.loop}` : '', `Site ${site.siteNumber}`].filter(Boolean);
+  const area = site.area?.trim();
+  const loop = site.loop?.trim();
+  const parts = [] as string[];
+  if (area) parts.push(area);
+  if (loop && loop.toLowerCase() !== area?.toLowerCase()) parts.push(`Loop ${loop}`);
+  parts.push(`Site ${site.siteNumber}`);
   return parts.join(' · ');
 }
 
