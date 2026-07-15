@@ -8,6 +8,7 @@ import {
   equipmentLifeStatusLabel,
   formatEquipmentDate,
 } from '../lib/equipment';
+import { equipmentAgeLabel } from '../lib/equipmentAge';
 import { createId } from '../lib/id';
 import type { Campsite, ChecklistSection, ChecklistTemplate, EquipmentInventory, Stay, TripChecklist } from '../types';
 
@@ -355,6 +356,7 @@ export function ChecklistPanel({
                         {visibleItems.map((item) => {
                           const equipmentItem = isEquipment ? equipmentInventory.items.find((entry) => entry.id === item.id) : undefined;
                           const life = equipmentItem ? equipmentLifeInfo(equipmentItem) : undefined;
+                          const age = equipmentItem ? equipmentAgeLabel(equipmentItem) : undefined;
                           const itemMessage = equipmentItem?.condition === 'replace'
                             ? 'NEEDS TO BE REPLACED'
                             : life?.status === 'overdue'
@@ -368,7 +370,7 @@ export function ChecklistPanel({
                             <div className={`checklist-item ${checkedIds.has(item.id) ? 'checked' : ''} ${equipmentItem ? `equipment-checklist-item equipment-${equipmentItem.condition} life-${life?.status ?? 'none'}` : ''}`} key={item.id}>
                               <label>
                                 <input type="checkbox" checked={checkedIds.has(item.id)} onChange={() => toggleItem(item.id)} />
-                                <span className="checklist-item-copy"><strong>{item.label}</strong>{itemMessage && <small>{itemMessage}</small>}</span>
+                                <span className="checklist-item-copy"><strong>{item.label}</strong>{age && <small className="equipment-checklist-age">{age} old</small>}{itemMessage && <small>{itemMessage}</small>}</span>
                               </label>
                               {equipmentItem && (
                                 <div className="equipment-status-pills checklist-equipment-pills">
