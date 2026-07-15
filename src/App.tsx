@@ -13,12 +13,13 @@ import { StatsPanel } from './components/StatsPanel';
 import { StayModal } from './components/StayModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createCamperRemote, createSiteRemote, createStayRemote, deleteCamperRemote, deleteProfileRemote, deleteSiteRemote, deleteStayRemote, loadAppState, persistLocal, saveCamperRemote, saveChecklistTemplateRemote, saveHomeBaseRemote, saveParkRemote, saveProfileRemote, saveSiteRemote, saveTripChecklistRemote, updateStayRemote } from './lib/api';
+import { createCamperRemote, createSiteRemote, createStayRemote, deleteCamperRemote, deleteProfileRemote, deleteSiteRemote, deleteStayRemote, loadAppState, persistLocal, saveCamperRemote, saveChecklistTemplateRemote, saveEquipmentInventoryRemote, saveHomeBaseRemote, saveParkRemote, saveProfileRemote, saveSiteRemote, saveTripChecklistRemote, updateStayRemote } from './lib/api';
 import { DEFAULT_CHECKLIST_TEMPLATE } from './lib/checklistDefaults';
+import { DEFAULT_EQUIPMENT_INVENTORY } from './lib/equipment';
 import { DEFAULT_HOME_BASE } from './lib/geo';
 import { createId } from './lib/id';
 import { mergeParkProfiles, renameParkRecords } from './lib/parks';
-import type { AppState, CamperProfile, Campsite, ChecklistTemplate, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist, WishlistSiteDraft } from './types';
+import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist, WishlistSiteDraft } from './types';
 
 const tabs = [
   { id: 'map', label: 'Map', icon: Map },
@@ -222,6 +223,12 @@ export default function App() {
     saveTripChecklistRemote(checklist).catch(() => setMode('local'));
   }
 
+  function saveEquipmentInventory(equipmentInventory: EquipmentInventory) {
+    if (!state) return;
+    setState({ ...state, equipmentInventory });
+    saveEquipmentInventoryRemote(equipmentInventory).catch(() => setMode('local'));
+  }
+
   function saveHomeBase(homeBase: HomeBase) {
     if (!state) return;
     setState({ ...state, homeBase });
@@ -245,7 +252,7 @@ export default function App() {
       <main className="app-main">
         {tab === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} />}
         {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} onDelete={deleteStay} />}
-        {tab === 'checklist' && <ChecklistPanel sites={state.sites} stays={state.stays} template={state.checklistTemplate ?? DEFAULT_CHECKLIST_TEMPLATE} tripChecklists={state.tripChecklists ?? []} onSaveTemplate={saveChecklistTemplate} onSaveTripChecklist={saveTripChecklist} />}
+        {tab === 'checklist' && <ChecklistPanel sites={state.sites} stays={state.stays} template={state.checklistTemplate ?? DEFAULT_CHECKLIST_TEMPLATE} tripChecklists={state.tripChecklists ?? []} equipmentInventory={state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY} onSaveTemplate={saveChecklistTemplate} onSaveTripChecklist={saveTripChecklist} onSaveEquipmentInventory={saveEquipmentInventory} />}
         {tab === 'stats' && <StatsPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} profile={activeProfile} homeBase={state.homeBase ?? DEFAULT_HOME_BASE} onSaveHomeBase={saveHomeBase} />}
         {tab === 'parks' && <ParksPanel parks={state.parks ?? []} sites={state.sites} stays={state.stays} profile={activeProfile} onEdit={setParkToEdit} onSelectSite={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} />}
         {tab === 'campers' && <CampersPanel campers={state.campers ?? []} stays={state.stays} sites={state.sites} onAdd={() => openCamper()} onEdit={openCamper} onDelete={deleteCamper} />}
