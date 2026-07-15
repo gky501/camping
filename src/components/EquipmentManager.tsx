@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { CalendarClock, History, PackageCheck, Plus, Trash2, Wrench } from 'lucide-react';
 import {
   equipmentConditionLabel,
@@ -8,35 +9,21 @@ import {
 } from '../lib/equipment';
 import { createId } from '../lib/id';
 import type { EquipmentCondition, EquipmentInventory, EquipmentItem, EquipmentLogAction, EquipmentLogEntry } from '../types';
+import { EquipmentItemDialog, EquipmentLifespanDialog, EquipmentLogDialog } from './EquipmentDialogs';
 
 interface EquipmentManagerProps {
   inventory: EquipmentInventory;
   onSave: (inventory: EquipmentInventory) => void;
 }
 
-const ACTIONS: EquipmentLogAction[] = ['replaced', 'repaired', 'serviced', 'cleaned', 'inspected'];
-
-function todayValue(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-}
-
-function validDate(value: string): boolean {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-  return !Number.isNaN(new Date(`${value}T12:00:00`).getTime());
-}
-
-function parseAction(value: string): EquipmentLogAction | undefined {
-  const normalized = value.trim().toLowerCase().replace(/\s+/g, '');
-  const aliases: Record<string, EquipmentLogAction> = {
-    replace: 'replaced', replaced: 'replaced', repair: 'repaired', repaired: 'repaired',
-    service: 'serviced', serviced: 'serviced', clean: 'cleaned', cleaned: 'cleaned',
-    inspect: 'inspected', inspected: 'inspected',
-  };
-  return aliases[normalized];
-}
+type EquipmentDialogState =
+  | { type: 'item'; item?: EquipmentItem }
+  | { type: 'log'; item: EquipmentItem }
+  | { type: 'lifespan'; item: EquipmentItem };
 
 export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
+  const [dialog, setDialog] = useState<EquipmentDialogState>();
+
   function saveItems(items: EquipmentItem[]) {
     onSave({ items });
   }
@@ -45,92 +32,46 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
     saveItems(inventory.items.map((item) => item.id === itemId ? { ...item, ...changes } : item));
   }
 
-  function addItem() {
-    const label = window.prompt('Equipment name:')?.trim();
-    if (!label) return;
+  function saveItemForm(value: { label: string; note?: string; condition: EquipmentCondition }) {
+    if (dialog?.type !== 'item') return;
+    if (dialog.item) {
+      updateItem(dialog.item.id, { ...value, updatedAt: new Date().toISOString() });
+      return;
+    }
     saveItems([
       ...inventory.items,
-      { id: createId('equipment'), label, condition: 'good', updatedAt: new Date().toISOString(), log: [] },
+      {
+        id: createId('equipment'),
+        ...value,
+        updatedAt: new Date().toISOString(),
+        log: [],
+      },
     ]);
   }
 
-  function editItem(item: EquipmentItem) {
-    const label = window.prompt('Equipment name:', item.label)?.trim();
-    if (!label) return;
-    const note = window.prompt('Optional condition note:', item.note ?? '');
-    if (note === null) return;
-    updateItem(item.id, { label, note: note.trim() || undefined, updatedAt: new Date().toISOString() });
+  function saveLogForm(value: { action: EquipmentLogAction; date: string; note?: string }) {
+    if (dialog?.type !== 'log') return;
+    const item = dialog.item;
+    const entry: EquipmentLogEntry = {
+      id: createId('equipment-log'),
+      ...value,
+    };
+    const log = [entry, ...(item.log ?? [])].sort((a, b) => b.date.localeCompare(a.date));
+    updateItem(item.id, {
+      log,
+      lastReplacedDate: value.action === 'replaced' ? value.date : item.lastReplacedDate,
+      condition: value.action === 'replaced' ? 'good' : item.condition,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  function saveLifespanForm(value: { replacementIntervalMonths?: number; lastReplacedDate?: string }) {
+    if (dialog?.type !== 'lifespan') return;
+    updateItem(dialog.item.id, { ...value, updatedAt: new Date().toISOString() });
   }
 
   function updateCondition(item: EquipmentItem, condition: EquipmentCondition) {
     updateItem(item.id, { condition, updatedAt: new Date().toISOString() });
-  }
-
-  function setReplacementSchedule(item: EquipmentItem) {
-    const intervalAnswer = window.prompt(
-      'Replace every how many months? Leave blank to remove the replacement schedule.',
-      item.replacementIntervalMonths ? String(item.replacementIntervalMonths) : '',
-    );
-    if (intervalAnswer === null) return;
-
-    const trimmedInterval = intervalAnswer.trim();
-    const interval = trimmedInterval ? Number(trimmedInterval) : undefined;
-    if (interval !== undefined && (!Number.isFinite(interval) || interval < 1 || interval > 600)) {
-      window.alert('Enter a replacement lifespan between 1 and 600 months.');
-      return;
-    }
-
-    const dateAnswer = window.prompt(
-      'Last replaced date (YYYY-MM-DD). Leave blank if it has not been recorded yet.',
-      item.lastReplacedDate ?? '',
-    );
-    if (dateAnswer === null) return;
-    const lastReplacedDate = dateAnswer.trim() || undefined;
-    if (lastReplacedDate && !validDate(lastReplacedDate)) {
-      window.alert('Enter the date as YYYY-MM-DD.');
-      return;
-    }
-
-    updateItem(item.id, {
-      replacementIntervalMonths: interval ? Math.round(interval) : undefined,
-      lastReplacedDate,
-      updatedAt: new Date().toISOString(),
-    });
-  }
-
-  function logActivity(item: EquipmentItem) {
-    const answer = window.prompt(`Activity (${ACTIONS.map(equipmentLogActionLabel).join(', ')}):`, 'Replaced');
-    if (answer === null) return;
-    const action = parseAction(answer);
-    if (!action) {
-      window.alert('Choose Replaced, Repaired, Serviced, Cleaned, or Inspected.');
-      return;
-    }
-
-    const dateAnswer = window.prompt('Date (YYYY-MM-DD):', todayValue());
-    if (dateAnswer === null) return;
-    const date = dateAnswer.trim();
-    if (!validDate(date)) {
-      window.alert('Enter the date as YYYY-MM-DD.');
-      return;
-    }
-
-    const noteAnswer = window.prompt('Optional note:', '');
-    if (noteAnswer === null) return;
-    const entry: EquipmentLogEntry = {
-      id: createId('equipment-log'),
-      action,
-      date,
-      note: noteAnswer.trim() || undefined,
-    };
-    const log = [entry, ...(item.log ?? [])].sort((a, b) => b.date.localeCompare(a.date));
-
-    updateItem(item.id, {
-      log,
-      lastReplacedDate: action === 'replaced' ? date : item.lastReplacedDate,
-      condition: action === 'replaced' ? 'good' : item.condition,
-      updatedAt: new Date().toISOString(),
-    });
   }
 
   function deleteLog(item: EquipmentItem, logId: string) {
@@ -159,7 +100,7 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
             <span>Track condition, replacement lifespan, and a simple history of maintenance or replacement.</span>
           </div>
         </div>
-        <button className="primary-button" onClick={addItem}><Plus size={17} /> Add equipment</button>
+        <button className="primary-button" onClick={() => setDialog({ type: 'item' })}><Plus size={17} /> Add equipment</button>
       </div>
 
       {inventory.items.length ? (
@@ -193,9 +134,9 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
                   {life.status !== 'none' && <span className={`equipment-life-pill ${life.status}`}>{equipmentLifeStatusLabel(life.status)}</span>}
                 </div>
                 <div className="equipment-row-actions">
-                  <button className="secondary-button" onClick={() => logActivity(item)}><History size={16} /> Log activity</button>
-                  <button className="secondary-button" onClick={() => setReplacementSchedule(item)}><CalendarClock size={16} /> Lifespan</button>
-                  <button className="secondary-button" onClick={() => editItem(item)}>Edit</button>
+                  <button className="secondary-button" onClick={() => setDialog({ type: 'log', item })}><History size={16} /> Log activity</button>
+                  <button className="secondary-button" onClick={() => setDialog({ type: 'lifespan', item })}><CalendarClock size={16} /> Lifespan</button>
+                  <button className="secondary-button" onClick={() => setDialog({ type: 'item', item })}>Edit</button>
                   <button className="danger-button" onClick={() => deleteItem(item)}><Trash2 size={16} /> Delete</button>
                 </div>
 
@@ -225,8 +166,12 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
           })}
         </div>
       ) : (
-        <div className="empty-state equipment-empty-state"><Wrench size={42} /><h3>Add your camping equipment</h3><p>Track hoses, filters, surge protectors, cords, tools, and anything else that may need maintenance or replacement.</p><button className="primary-button" onClick={addItem}><Plus size={17} /> Add first equipment item</button></div>
+        <div className="empty-state equipment-empty-state"><Wrench size={42} /><h3>Add your camping equipment</h3><p>Track hoses, filters, surge protectors, cords, tools, and anything else that may need maintenance or replacement.</p><button className="primary-button" onClick={() => setDialog({ type: 'item' })}><Plus size={17} /> Add first equipment item</button></div>
       )}
+
+      {dialog?.type === 'item' && <EquipmentItemDialog item={dialog.item} onClose={() => setDialog(undefined)} onSave={saveItemForm} />}
+      {dialog?.type === 'log' && <EquipmentLogDialog item={dialog.item} onClose={() => setDialog(undefined)} onSave={saveLogForm} />}
+      {dialog?.type === 'lifespan' && <EquipmentLifespanDialog item={dialog.item} onClose={() => setDialog(undefined)} onSave={saveLifespanForm} />}
     </>
   );
 }
