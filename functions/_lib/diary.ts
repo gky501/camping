@@ -11,6 +11,11 @@ function parkKey(name: unknown, state: unknown): string {
   return `${String(name ?? '').trim().toLowerCase()}::${String(state ?? '').trim().toLowerCase()}`;
 }
 
+function parseJson<T>(value: unknown, fallback: T): T {
+  try { return value ? JSON.parse(String(value)) as T : fallback; }
+  catch { return fallback; }
+}
+
 async function ensureParkProfiles(db: D1Database) {
   const [siteRows, parkRows] = await Promise.all([
     db.prepare(`SELECT DISTINCT s.park, s.state FROM sites s INNER JOIN stays st ON st.site_id=s.id WHERE TRIM(s.park)<>''`).all(),
@@ -72,13 +77,26 @@ export async function ensureDiarySchema(db: D1Database) {
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`).run();
+
+  await db.prepare(`CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+
+  await db.prepare(`CREATE TABLE IF NOT EXISTS trip_checklists (
+    stay_id TEXT PRIMARY KEY,
+    data_json TEXT NOT NULL DEFAULT '{"checkedItemIds":[],"customSections":[]}',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`).run();
+
   await db.prepare(`INSERT OR IGNORE INTO camper_profiles (id,name,type,notes) VALUES ('camper-tent','Tent Camping','tent','')`).run();
   await ensureParkProfiles(db);
 }
 
 export async function loadBootstrap(db: D1Database) {
   await ensureDiarySchema(db);
-  const [sitesResult, factsResult, seasonsResult, staysResult, observationsResult, profilesResult, criterionWeightsResult, monthWeightsResult, parksResult, campersResult] = await Promise.all([
+  const [sitesResult, factsResult, seasonsResult, staysResult, observationsResult, profilesResult, criterionWeightsResult, monthWeightsResult, parksResult, campersResult, settingsResult, tripChecklistsResult] = await Promise.all([
     db.prepare('SELECT * FROM sites ORDER BY park, area, loop, site_number').all(),
     db.prepare('SELECT site_id, criterion_key, rating FROM site_facts').all(),
     db.prepare('SELECT site_id, month_key, rating FROM site_seasonal_ratings').all(),
@@ -89,6 +107,8 @@ export async function loadBootstrap(db: D1Database) {
     db.prepare('SELECT profile_id, month_key, weight FROM profile_month_weights').all(),
     db.prepare('SELECT * FROM park_profiles ORDER BY name,state').all(),
     db.prepare('SELECT * FROM camper_profiles ORDER BY CASE WHEN id=\'camper-tent\' THEN 1 ELSE 0 END, name').all(),
+    db.prepare('SELECT key,value_json FROM app_settings').all(),
+    db.prepare('SELECT stay_id,data_json FROM trip_checklists').all(),
   ]);
 
   const factsBySite = new Map<string, Record<string, number>>();
@@ -101,18 +121,20 @@ export async function loadBootstrap(db: D1Database) {
   for (const row of criterionWeightsResult.results as Array<Record<string, unknown>>) { const id = String(row.profile_id); const weights = criterionByProfile.get(id) ?? {}; weights[String(row.criterion_key)] = Number(row.weight); criterionByProfile.set(id, weights); }
   const monthsByProfile = new Map<string, Record<string, number>>();
   for (const row of monthWeightsResult.results as Array<Record<string, unknown>>) { const id = String(row.profile_id); const weights = monthsByProfile.get(id) ?? {}; weights[String(row.month_key)] = Number(row.weight); monthsByProfile.set(id, weights); }
+  const settings = new Map<string, unknown>();
+  for (const row of settingsResult.results as Array<Record<string, unknown>>) settings.set(String(row.key), parseJson(row.value_json, undefined));
 
   return {
     sites: (sitesResult.results as Array<Record<string, unknown>>).map((row) => ({
       id: row.id, park: row.park, state: row.state, area: row.area ?? '', loop: row.loop, siteNumber: row.site_number,
       latitude: Number(row.latitude), longitude: Number(row.longitude), notes: row.notes,
-      amenities: JSON.parse(String(row.amenities_json || '{}')), viewTypes: JSON.parse(String(row.view_types_json || '[]')),
+      amenities: parseJson(row.amenities_json, {}), viewTypes: parseJson(row.view_types_json, []),
       legacyStayCount: Number(row.legacy_stay_count || 0), importedRating: row.imported_rating === null ? undefined : Number(row.imported_rating),
       favorite: Boolean(row.favorite), status: row.status, currentFacts: factsBySite.get(String(row.id)) ?? {}, seasonalRatings: seasonsBySite.get(String(row.id)) ?? {},
     })),
     stays: (staysResult.results as Array<Record<string, unknown>>).map((row) => ({
       id: row.id, siteId: row.site_id, camperId: row.camper_id ?? undefined,
-      siteSnapshot: row.site_snapshot_json ? JSON.parse(String(row.site_snapshot_json)) : undefined,
+      siteSnapshot: row.site_snapshot_json ? parseJson(row.site_snapshot_json, undefined) : undefined,
       arrivalDate: row.arrival_date, departureDate: row.departure_date, nights: Number(row.nights),
       nightlyRate: row.nightly_rate === null ? undefined : Number(row.nightly_rate), journal: row.journal,
       weather: row.weather ?? undefined, wouldReturn: row.would_return === null ? undefined : Boolean(row.would_return),
@@ -131,6 +153,12 @@ export async function loadBootstrap(db: D1Database) {
       lengthFeet: row.length_feet === null ? undefined : Number(row.length_feet), sleeps: row.sleeps === null ? undefined : Number(row.sleeps),
       slideOuts: row.slide_outs === null ? undefined : Number(row.slide_outs), dryWeightLbs: row.dry_weight_lbs === null ? undefined : Number(row.dry_weight_lbs),
       gvwrLbs: row.gvwr_lbs === null ? undefined : Number(row.gvwr_lbs), tentStyle: row.tent_style ?? undefined, notes: row.notes ?? '',
+    })),
+    checklistTemplate: settings.get('checklist_template'),
+    homeBase: settings.get('home_base'),
+    tripChecklists: (tripChecklistsResult.results as Array<Record<string, unknown>>).map((row) => ({
+      stayId: String(row.stay_id),
+      ...parseJson(row.data_json, { checkedItemIds: [], customSections: [] }),
     })),
   };
 }
@@ -249,4 +277,24 @@ export async function updateStay(db: D1Database, id: string, body: JsonObject) {
   ];
   await db.batch(statements); await ensureParkProfiles(db);
   return json({ ok: true, id });
+}
+
+export async function saveSetting(db: D1Database, key: string, value: unknown) {
+  await ensureDiarySchema(db);
+  await db.prepare(`INSERT INTO app_settings (key,value_json,updated_at) VALUES (?,?,CURRENT_TIMESTAMP)
+    ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json,updated_at=CURRENT_TIMESTAMP`)
+    .bind(key, JSON.stringify(value)).run();
+  return json({ ok: true });
+}
+
+export async function saveTripChecklist(db: D1Database, stayId: string, body: JsonObject) {
+  await ensureDiarySchema(db);
+  const stay = await db.prepare('SELECT id FROM stays WHERE id=?').bind(stayId).first();
+  if (!stay) return error('Trip not found.', 404);
+  const checkedItemIds = Array.isArray(body.checkedItemIds) ? body.checkedItemIds.map(String) : [];
+  const customSections = Array.isArray(body.customSections) ? body.customSections : [];
+  await db.prepare(`INSERT INTO trip_checklists (stay_id,data_json,updated_at) VALUES (?,?,CURRENT_TIMESTAMP)
+    ON CONFLICT(stay_id) DO UPDATE SET data_json=excluded.data_json,updated_at=CURRENT_TIMESTAMP`)
+    .bind(stayId, JSON.stringify({ checkedItemIds, customSections })).run();
+  return json({ ok: true });
 }
