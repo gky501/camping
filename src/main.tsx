@@ -16,6 +16,7 @@ import './equipment-dialogs.css';
 import './stats.css';
 import './map-tools.css';
 import './map-markers.css';
+import './trip-dashboard.css';
 import './mobile-refresh.css';
 import './navigation-refresh.css';
 import App from './App';
