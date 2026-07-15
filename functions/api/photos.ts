@@ -1,4 +1,8 @@
-import { error, json, type Env } from '../_lib/diary';
+import { error, json } from '../_lib/diary';
+
+interface PhotoEnv {
+  PHOTOS?: R2Bucket;
+}
 
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
@@ -13,7 +17,7 @@ function extensionFor(file: File): string {
   return 'jpg';
 }
 
-export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestGet: PagesFunction<PhotoEnv> = async ({ request, env }) => {
   if (!env.PHOTOS) return error('Trip photo storage is not connected yet.', 503);
   const key = new URL(request.url).searchParams.get('key')?.trim();
   if (!key) return error('Photo key is required.');
@@ -26,7 +30,7 @@ export const onRequestGet: PagesFunction<Env> = async ({ request, env }) => {
   return new Response(object.body, { headers });
 };
 
-export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<PhotoEnv> = async ({ request, env }) => {
   if (!env.PHOTOS) return error('Trip photo storage is not connected yet. Create and bind an R2 bucket named PHOTOS.', 503);
   try {
     const form = await request.formData();
@@ -57,7 +61,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
   }
 };
 
-export const onRequestDelete: PagesFunction<Env> = async ({ request, env }) => {
+export const onRequestDelete: PagesFunction<PhotoEnv> = async ({ request, env }) => {
   if (!env.PHOTOS) return error('Trip photo storage is not connected yet.', 503);
   const key = new URL(request.url).searchParams.get('key')?.trim();
   if (!key) return error('Photo key is required.');
