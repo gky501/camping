@@ -138,12 +138,42 @@ export interface PreferenceProfile {
   seasonalShare: number;
 }
 
+export interface ChecklistItem {
+  id: string;
+  label: string;
+}
+
+export interface ChecklistSection {
+  id: string;
+  name: string;
+  items: ChecklistItem[];
+}
+
+export interface ChecklistTemplate {
+  sections: ChecklistSection[];
+}
+
+export interface TripChecklist {
+  stayId: string;
+  checkedItemIds: string[];
+  customSections: ChecklistSection[];
+}
+
+export interface HomeBase {
+  name: string;
+  latitude: number;
+  longitude: number;
+}
+
 export interface AppState {
   sites: Campsite[];
   stays: Stay[];
   profiles: PreferenceProfile[];
   parks?: ParkProfile[];
   campers?: CamperProfile[];
+  checklistTemplate?: ChecklistTemplate;
+  tripChecklists?: TripChecklist[];
+  homeBase?: HomeBase;
 }
 
 export interface StayDraft extends Omit<Stay, 'id' | 'createdAt' | 'siteSnapshot'> {

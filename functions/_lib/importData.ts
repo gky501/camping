@@ -69,12 +69,20 @@ interface CamperProfile {
   tentStyle?: string;
   notes?: string;
 }
+interface ChecklistItem { id: string; label: string }
+interface ChecklistSection { id: string; name: string; items: ChecklistItem[] }
+interface ChecklistTemplate { sections: ChecklistSection[] }
+interface TripChecklist { stayId: string; checkedItemIds: string[]; customSections: ChecklistSection[] }
+interface HomeBase { name: string; latitude: number; longitude: number }
 interface BackupState {
   sites: Campsite[];
   stays: Stay[];
   profiles: PreferenceProfile[];
   parks?: ParkProfile[];
   campers?: CamperProfile[];
+  checklistTemplate?: ChecklistTemplate;
+  tripChecklists?: TripChecklist[];
+  homeBase?: HomeBase;
 }
 
 const schemaStatements = [
@@ -188,6 +196,16 @@ const schemaStatements = [
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`,
+  `CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value_json TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
+  `CREATE TABLE IF NOT EXISTS trip_checklists (
+    stay_id TEXT PRIMARY KEY,
+    data_json TEXT NOT NULL DEFAULT '{"checkedItemIds":[],"customSections":[]}',
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )`,
 ];
 
 function isBackupState(value: unknown): value is BackupState {
@@ -237,6 +255,8 @@ export async function importBackup(env: Env, value: unknown): Promise<Response> 
   await initializeSchema(env.DB);
 
   await env.DB.batch([
+    env.DB.prepare('DELETE FROM trip_checklists'),
+    env.DB.prepare('DELETE FROM app_settings'),
     env.DB.prepare('DELETE FROM stay_observations'),
     env.DB.prepare('DELETE FROM site_fact_history'),
     env.DB.prepare('DELETE FROM stays'),
@@ -305,8 +325,10 @@ export async function importBackup(env: Env, value: unknown): Promise<Response> 
   }
 
   const knownSiteIds = new Set(state.sites.map((site) => site.id));
+  const knownStayIds = new Set<string>();
   for (const stay of state.stays) {
     if (!stay?.id || !knownSiteIds.has(stay.siteId) || !stay.arrivalDate || !stay.departureDate || Number(stay.nights) < 1) continue;
+    knownStayIds.add(stay.id);
     statements.push(env.DB.prepare(`INSERT INTO stays
       (id,site_id,camper_id,site_snapshot_json,arrival_date,departure_date,nights,nightly_rate,journal,weather,would_return,created_at)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).bind(
@@ -319,6 +341,20 @@ export async function importBackup(env: Env, value: unknown): Promise<Response> 
     }
   }
 
+  if (state.checklistTemplate?.sections) {
+    statements.push(env.DB.prepare('INSERT INTO app_settings (key,value_json) VALUES (?,?)').bind('checklist_template', JSON.stringify(state.checklistTemplate)));
+  }
+  if (state.homeBase && finite(state.homeBase.latitude) !== null && finite(state.homeBase.longitude) !== null) {
+    statements.push(env.DB.prepare('INSERT INTO app_settings (key,value_json) VALUES (?,?)').bind('home_base', JSON.stringify(state.homeBase)));
+  }
+  for (const checklist of state.tripChecklists ?? []) {
+    if (!checklist?.stayId || !knownStayIds.has(checklist.stayId)) continue;
+    statements.push(env.DB.prepare('INSERT INTO trip_checklists (stay_id,data_json) VALUES (?,?)').bind(
+      checklist.stayId,
+      JSON.stringify({ checkedItemIds: checklist.checkedItemIds ?? [], customSections: checklist.customSections ?? [] }),
+    ));
+  }
+
   await runChunks(env.DB, statements);
 
   return Response.json({
@@ -329,6 +365,7 @@ export async function importBackup(env: Env, value: unknown): Promise<Response> 
       profiles: state.profiles.length,
       parks: normalizedParks(state).length,
       campers: campers.length,
+      tripChecklists: state.tripChecklists?.length ?? 0,
     },
   });
 }
