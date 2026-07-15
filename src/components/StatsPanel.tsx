@@ -51,6 +51,7 @@ function formatDate(value: string): string {
 
 export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHomeBase }: StatsPanelProps) {
   const currentYear = new Date().getFullYear();
+  const today = new Date().toISOString().slice(0, 10);
   const availableYears = useMemo(() => {
     const years = new Set(stays.map((stay) => Number(stay.arrivalDate.slice(0, 4))).filter(Number.isFinite));
     years.add(currentYear);
@@ -64,13 +65,16 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
   useEffect(() => { if (!availableYears.includes(year)) setYear(availableYears[0] ?? currentYear); }, [availableYears, currentYear, year]);
 
   const yearStays = useMemo(() => stays.filter((stay) => Number(stay.arrivalDate.slice(0, 4)) === year), [stays, year]);
+  const yearStartedStays = useMemo(() => yearStays.filter((stay) => stay.arrivalDate <= today), [today, yearStays]);
+  const startedStays = useMemo(() => stays.filter((stay) => stay.arrivalDate <= today), [stays, today]);
+
   const yearStats = useMemo(() => {
     const monthlyNights = Array.from({ length: 12 }, () => 0);
     const parks = new Set<string>();
     const states = new Set<string>();
     let nights = 0;
     let cost = 0;
-    for (const stay of yearStays) {
+    for (const stay of yearStartedStays) {
       const month = Number(stay.arrivalDate.slice(5, 7)) - 1;
       if (month >= 0 && month < 12) monthlyNights[month] += stay.nights;
       nights += stay.nights;
@@ -78,7 +82,6 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       const location = locationForStay(stay, sites);
       if (location) { parks.add(parkKey(location)); states.add(location.state); }
     }
-    const today = new Date().toISOString().slice(0, 10);
     return {
       trips: yearStays.length,
       nights,
@@ -89,22 +92,22 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       completed: yearStays.filter((stay) => stay.departureDate < today).length,
       monthlyNights,
     };
-  }, [sites, yearStays]);
+  }, [sites, today, yearStartedStays, yearStays]);
 
   const records = useMemo(() => {
     const siteGroups = new Map<string, { stays: Stay[]; location?: StayLocation }>();
     const parkGroups = new Map<string, { stays: Stay[]; location?: StayLocation; siteIds: Set<string> }>();
     const camperGroups = new Map<string, Stay[]>();
 
-    for (const stay of stays) {
+    for (const stay of startedStays) {
       const location = locationForStay(stay, sites);
-      const siteGroup = siteGroups.get(stay.siteId) ?? { stays: [], location };
+      const siteGroup = siteGroups.get(stay.siteId) ?? { stays: [] as Stay[], location };
       siteGroup.stays.push(stay);
       if (!siteGroup.location) siteGroup.location = location;
       siteGroups.set(stay.siteId, siteGroup);
 
       const key = parkKey(location);
-      const parkGroup = parkGroups.get(key) ?? { stays: [], location, siteIds: new Set<string>() };
+      const parkGroup = parkGroups.get(key) ?? { stays: [] as Stay[], location, siteIds: new Set<string>() };
       parkGroup.stays.push(stay);
       parkGroup.siteIds.add(stay.siteId);
       if (!parkGroup.location) parkGroup.location = location;
@@ -132,7 +135,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       return { group, score: ratedSites.length ? ratedSites.reduce((sum, score) => sum + score, 0) / ratedSites.length : null };
     }).filter((entry) => entry.score !== null).sort((a, b) => (b.score ?? 0) - (a.score ?? 0))[0];
 
-    const furthestStay = stays.map((stay) => {
+    const furthestStay = startedStays.map((stay) => {
       const location = locationForStay(stay, sites);
       return { stay, location, distance: location ? distanceMiles(homeBase, location) : -1 };
     }).sort((a, b) => b.distance - a.distance)[0];
@@ -141,9 +144,9 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       const nightDifference = b[1].reduce((sum, stay) => sum + stay.nights, 0) - a[1].reduce((sum, stay) => sum + stay.nights, 0);
       return nightDifference || b[1].length - a[1].length;
     })[0];
-    const longestStay = [...stays].sort((a, b) => b.nights - a.nights)[0];
-    const totalNights = stays.reduce((sum, stay) => sum + stay.nights, 0);
-    const totalCost = stays.reduce((sum, stay) => sum + (stay.nightlyRate ?? 0) * stay.nights, 0);
+    const longestStay = [...startedStays].sort((a, b) => b.nights - a.nights)[0];
+    const totalNights = startedStays.reduce((sum, stay) => sum + stay.nights, 0);
+    const totalCost = startedStays.reduce((sum, stay) => sum + (stay.nightlyRate ?? 0) * stay.nights, 0);
 
     return {
       mostStayedSite,
@@ -157,7 +160,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       totalCost,
       averageNightlyCost: totalNights ? totalCost / totalNights : 0,
     };
-  }, [campers, homeBase, profile, sites, stays]);
+  }, [campers, homeBase, profile, sites, startedStays]);
 
   function useCurrentLocation() {
     if (!navigator.geolocation) {
@@ -196,7 +199,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       <div className="stats-hero-grid">
         <article className="stats-hero-card"><CalendarDays /><div><strong>{yearStats.trips}</strong><span>trips in {year}</span><small>{yearStats.completed} completed · {yearStats.planned} planned</small></div></article>
         <article className="stats-hero-card"><Moon /><div><strong>{yearStats.nights}</strong><span>nights camped</span><small>{yearStats.parks} parks · {yearStats.states} states</small></div></article>
-        <article className="stats-hero-card"><DollarSign /><div><strong>{currency(yearStats.cost)}</strong><span>estimated campsite cost</span><small>{yearStats.nights ? currency(yearStats.cost / yearStats.nights) : '$0'} per night</small></div></article>
+        <article className="stats-hero-card"><DollarSign /><div><strong>{currency(yearStats.cost)}</strong><span>campsite cost to date</span><small>{yearStats.nights ? currency(yearStats.cost / yearStats.nights) : '$0'} per night</small></div></article>
       </div>
 
       <div className="stats-main-grid">
@@ -207,7 +210,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
               <div className="month-bar-column" key={monthLabels[index]}><span>{nights || ''}</span><div><i style={{ height: `${Math.max(nights ? (nights / maxMonthlyNights) * 100 : 3, 3)}%` }} /></div><small>{monthLabels[index]}</small></div>
             ))}
           </div>
-          {!yearStats.trips && <p className="stats-empty-note">No trips are recorded for {year} yet.</p>}
+          {!yearStartedStays.length && <p className="stats-empty-note">No trips have started in {year} yet.</p>}
         </article>
 
         <article className="stats-card home-base-card">
@@ -233,7 +236,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       </div>
 
       <div className="lifetime-strip">
-        <div><strong>{stays.length}</strong><span>lifetime trips</span></div>
+        <div><strong>{startedStays.length}</strong><span>lifetime trips started</span></div>
         <div><strong>{records.totalNights}</strong><span>lifetime nights</span></div>
         <div><strong>{currency(records.totalCost)}</strong><span>recorded campsite cost</span></div>
         <div><strong>{currency(records.averageNightlyCost)}</strong><span>average nightly cost</span></div>
