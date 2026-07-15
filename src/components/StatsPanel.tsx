@@ -3,6 +3,7 @@ import { BarChart3, CalendarDays, DollarSign, LocateFixed, MapPin, Moon, Navigat
 import { distanceMiles } from '../lib/geo';
 import { calculateOverall, formatScore } from '../lib/scoring';
 import type { CamperProfile, Campsite, HomeBase, PreferenceProfile, Stay } from '../types';
+import { CampingAchievements } from './CampingAchievements';
 
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -302,6 +303,8 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
           <p className="stats-card-note">{completedStays.length ? `Most common: ${lifetimePatterns.mostCommonCheckIn ?? '—'} check-ins · ${lifetimePatterns.mostCommonCheckOut ?? '—'} checkouts` : 'Complete a trip to begin building your weekday pattern.'}</p>
         </article>
       </div>
+
+      <CampingAchievements sites={sites} stays={stays} homeBase={homeBase} />
 
       <div className="stats-section-heading"><div><p className="eyebrow">All-time records</p><h3>Your camping record book</h3></div></div>
       <div className="record-card-grid">
