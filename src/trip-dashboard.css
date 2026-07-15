@@ -1,0 +1,83 @@
+.trip-dashboard-backdrop { align-items: flex-start; overflow-y: auto; padding: 24px; }
+.trip-dashboard-modal { width: min(1060px, 100%); max-height: none; margin: 0 auto; overflow: visible; border-radius: 26px; }
+.trip-dashboard-header { position: sticky; top: -24px; z-index: 5; margin: -1px -1px 0; padding: 22px 24px 18px; border: 1px solid var(--line); border-bottom-color: #d2ddd4; border-radius: 26px 26px 0 0; background: rgba(250,249,244,.97); backdrop-filter: blur(16px); }
+.trip-dashboard-countdown { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin: 20px 22px 16px; padding: 25px; border-radius: 22px; color: #fff; background: linear-gradient(135deg, #173e31, #2e6b52); box-shadow: 0 18px 38px rgba(23,62,49,.2); }
+.trip-dashboard-countdown h3 { margin: 0; font-size: clamp(1.6rem, 4vw, 2.55rem); line-height: 1.02; }
+.trip-dashboard-countdown p { margin: 8px 0 0; color: rgba(255,255,255,.78); }
+.trip-dashboard-countdown .eyebrow { color: rgba(255,255,255,.68); }
+.trip-dashboard-countdown > svg { width: 46px; height: 46px; flex: none; opacity: .86; }
+.trip-dashboard-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 0 22px 14px; }
+.trip-dashboard-card { margin: 0 22px 14px; padding: 20px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 12px 30px rgba(23,62,49,.055); }
+.trip-dashboard-grid .trip-dashboard-card { margin: 0; }
+.trip-dashboard-weather-card { grid-column: 1 / -1; }
+.trip-dashboard-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 15px; }
+.trip-dashboard-card-heading h3 { margin: 0; color: var(--forest); font-size: 1.16rem; }
+.trip-dashboard-card-heading > svg { width: 23px; height: 23px; color: var(--forest-2); }
+.trip-fit-result { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 15px; }
+.trip-fit-result svg { flex: none; margin-top: 2px; }
+.trip-fit-result strong, .trip-fit-result p { display: block; }
+.trip-fit-result p { margin: 4px 0 0; font-size: .8rem; line-height: 1.45; }
+.trip-fit-result.good { color: #174b37; background: #e6f2e9; }
+.trip-fit-result.watch { color: #7a4515; background: #fff1d7; }
+.trip-fit-result.unknown { color: #4d5f55; background: #edf1ed; }
+.trip-dashboard-location { display: flex; align-items: center; gap: 7px; margin: 13px 0 0; color: var(--muted); font-size: .8rem; }
+.trip-waze-button { width: 100%; min-height: 52px; text-decoration: none; }
+.trip-dashboard-muted { display: flex; align-items: center; gap: 7px; margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.trip-forecast-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; overflow-x: auto; }
+.trip-forecast-strip > div { min-width: 104px; padding: 13px; border: 1px solid #e0e6e1; border-radius: 14px; background: #f8faf7; }
+.trip-forecast-strip strong, .trip-forecast-strip span, .trip-forecast-strip b, .trip-forecast-strip small { display: block; }
+.trip-forecast-strip strong { color: var(--forest); font-size: .78rem; }
+.trip-forecast-strip span { margin-top: 5px; color: #5d6c64; font-size: .72rem; }
+.trip-forecast-strip b { margin-top: 7px; color: #223a30; font-size: 1rem; }
+.trip-forecast-strip small { margin-top: 3px; color: var(--muted); }
+.trip-gate-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 9px; }
+.trip-gate-row input { min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; color: var(--forest); background: #fbfcfa; font-weight: 800; }
+.trip-dashboard-gate-card .trip-dashboard-muted { margin-top: 9px; }
+.trip-equipment-alert-list { display: grid; gap: 8px; }
+.trip-equipment-alert-list > div, .trip-equipment-clear { display: flex; align-items: flex-start; gap: 10px; padding: 13px 14px; border-radius: 14px; }
+.trip-equipment-alert-list svg, .trip-equipment-clear svg { width: 20px; height: 20px; flex: none; }
+.trip-equipment-alert-list strong { font-size: .8rem; line-height: 1.42; }
+.trip-equipment-alert-list .danger { color: #8a2e29; background: #fff0ee; border: 1px solid #efc2bd; }
+.trip-equipment-alert-list .warning { color: #7c4b12; background: #fff3dc; border: 1px solid #ead3a4; }
+.trip-equipment-clear { color: #22543d; background: #eaf5ed; }
+.trip-equipment-clear strong, .trip-equipment-clear p { display: block; }
+.trip-equipment-clear p { margin: 4px 0 0; color: #557064; font-size: .78rem; }
+.trip-photo-upload { width: fit-content; cursor: pointer; }
+.trip-photo-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.trip-photo-upload.disabled { opacity: .55; cursor: wait; }
+.trip-photo-status { margin: 10px 0 0; color: var(--muted); font-size: .78rem; }
+.trip-photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 15px; }
+.trip-photo-grid figure { margin: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 15px; background: #f6f8f5; }
+.trip-photo-grid img { width: 100%; aspect-ratio: 4 / 3; display: block; object-fit: cover; }
+.trip-photo-grid figcaption { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; }
+.trip-photo-grid figcaption span { overflow: hidden; color: #516158; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
+.trip-photo-grid figcaption button { width: 32px; height: 32px; flex: none; display: grid; place-items: center; border: 0; border-radius: 9px; color: #9a3932; background: #fff0ee; }
+.trip-photo-empty { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 16px; border: 1px dashed #cad5cc; border-radius: 15px; color: var(--muted); background: #f9fbf8; }
+.trip-photo-empty svg { flex: none; }
+.trip-photo-empty p { margin: 0; font-size: .8rem; }
+.trip-dashboard-actions { position: sticky; bottom: -24px; z-index: 4; margin: 0 -1px -1px; padding: 16px 22px calc(16px + env(safe-area-inset-bottom)); border: 1px solid var(--line); border-top-color: #d2ddd4; border-radius: 0 0 26px 26px; background: rgba(250,249,244,.97); backdrop-filter: blur(16px); }
+.spin { animation: trip-dashboard-spin .85s linear infinite; }
+@keyframes trip-dashboard-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 760px) {
+  .trip-dashboard-backdrop { align-items: flex-end; padding: 0; }
+  .trip-dashboard-modal { width: 100%; max-height: 94dvh; overflow-y: auto; border-radius: 24px 24px 0 0; }
+  .trip-dashboard-header { top: 0; margin: 0; border-radius: 24px 24px 0 0; }
+  .trip-dashboard-countdown { margin: 14px; padding: 20px; }
+  .trip-dashboard-countdown > svg { width: 34px; height: 34px; }
+  .trip-dashboard-grid { grid-template-columns: 1fr; padding: 0 14px 12px; }
+  .trip-dashboard-weather-card { grid-column: auto; }
+  .trip-dashboard-card { margin: 0 14px 12px; padding: 16px; border-radius: 17px; }
+  .trip-dashboard-grid .trip-dashboard-card { margin: 0; }
+  .trip-forecast-strip { grid-template-columns: repeat(4, minmax(108px, 1fr)); }
+  .trip-dashboard-actions { bottom: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; border-radius: 0; }
+  .trip-dashboard-actions .modal-action-spacer { display: none; }
+  .trip-dashboard-actions .primary-button { grid-column: 1 / -1; }
+}
+
+@media (max-width: 430px) {
+  .trip-dashboard-countdown { align-items: flex-start; }
+  .trip-dashboard-countdown > svg { display: none; }
+  .trip-gate-row { grid-template-columns: 1fr; }
+  .trip-photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardCheck, MapPin, Moon, Pencil, TentTree, Trash2, X } from 'lucide-react';
+import { CalendarDays, ClipboardCheck, Gauge, MapPin, Moon, Pencil, TentTree, Trash2, X } from 'lucide-react';
 import { summarizeAmenities } from '../lib/amenities';
 import { camperSubtitle, camperTypeLabel } from '../lib/campers';
 import { formatDateRange } from '../lib/dates';
@@ -7,10 +7,11 @@ import { CRITERIA, type CamperProfile, type Campsite, type Stay } from '../types
 import { SiteLocationPicker } from './SiteLocationPicker';
 import { TripMetaPills, TripStatusPill } from './TripPills';
 
-export function StayDetailModal({ stay, site, camper, onChecklist, onEdit, onDelete, onClose }: {
+export function StayDetailModal({ stay, site, camper, onDashboard, onChecklist, onEdit, onDelete, onClose }: {
   stay: Stay;
   site?: Campsite;
   camper?: CamperProfile;
+  onDashboard: () => void;
   onChecklist: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -31,7 +32,7 @@ export function StayDetailModal({ stay, site, camper, onChecklist, onEdit, onDel
           <TripMetaPills stay={stay} camper={camper} />
         </section>
 
-        {status === 'upcoming' && <section className="form-section planned-trip-callout"><CalendarDays size={22} /><div><h3>This trip is still a plan.</h3><p>Edit it anytime to add reservation details now, use its packing checklist before departure, then return after the stay to complete ratings and final diary notes.</p></div></section>}
+        {status === 'upcoming' && <section className="form-section planned-trip-callout"><CalendarDays size={22} /><div><h3>This trip is still a plan.</h3><p>Use its trip dashboard for the countdown, weather, Waze directions, gate code, equipment warnings, campsite fit, and photos.</p></div></section>}
 
         {camper && <section className="form-section camper-used-section"><div className="section-heading-row"><div><h3>Camping setup</h3><p>The camper or tent profile tagged to this trip.</p></div><TentTree size={22} /></div><div className="camper-used-card"><div><strong>{camper.name}</strong><span>{camperSubtitle(camper) || camperTypeLabel(camper.type)}</span></div><span className="camper-type-badge">{camperTypeLabel(camper.type)}</span></div></section>}
 
@@ -42,7 +43,7 @@ export function StayDetailModal({ stay, site, camper, onChecklist, onEdit, onDel
         {(observed.length > 0 || status !== 'upcoming') && <section className="form-section"><h3>What the site was like</h3>{observed.length ? <div className="stay-rating-grid">{observed.map((criterion) => <div key={criterion.key}><span>{criterion.label}</span><strong>{stay.observations[criterion.key]}/5</strong></div>)}</div> : <p className="form-help">No ratings were recorded for this stay.</p>}</section>}
 
         <section className="form-section"><h3>{status === 'upcoming' ? 'Planning notes' : 'Diary notes'}</h3><p className="diary-notes">{stay.journal || (status === 'upcoming' ? 'No planning notes have been added yet.' : 'No notes were added to this stay.')}</p></section>
-        <div className="modal-actions trip-detail-actions"><button type="button" className="danger-button" onClick={onDelete}><Trash2 size={16} /> Delete {status === 'upcoming' ? 'plan' : 'stay'}</button><span className="modal-action-spacer" /><button type="button" className="secondary-button" onClick={onEdit}><Pencil size={16} /> Edit {status === 'upcoming' ? 'plan' : 'stay'}</button><button type="button" className="primary-button checklist-detail-button" onClick={onChecklist}><ClipboardCheck size={16} /> View checklist</button><button type="button" className="secondary-button" onClick={onClose}>Done</button></div>
+        <div className="modal-actions trip-detail-actions"><button type="button" className="danger-button" onClick={onDelete}><Trash2 size={16} /> Delete {status === 'upcoming' ? 'plan' : 'stay'}</button><span className="modal-action-spacer" /><button type="button" className="secondary-button" onClick={onEdit}><Pencil size={16} /> Edit {status === 'upcoming' ? 'plan' : 'stay'}</button><button type="button" className="secondary-button" onClick={onChecklist}><ClipboardCheck size={16} /> View checklist</button><button type="button" className="primary-button" onClick={onDashboard}><Gauge size={16} /> Trip dashboard</button><button type="button" className="secondary-button" onClick={onClose}>Done</button></div>
       </div>
     </div>
   );

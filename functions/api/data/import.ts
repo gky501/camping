@@ -50,8 +50,13 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
 
     const backup = await request.json<unknown>();
     const response = await importBackup(env, backup);
-    if (response.ok && backup && typeof backup === 'object' && 'equipmentInventory' in backup) {
-      await saveSetting(env.DB, 'equipment_inventory', (backup as { equipmentInventory?: unknown }).equipmentInventory ?? { items: [] });
+    if (response.ok && backup && typeof backup === 'object') {
+      if ('equipmentInventory' in backup) {
+        await saveSetting(env.DB, 'equipment_inventory', (backup as { equipmentInventory?: unknown }).equipmentInventory ?? { items: [] });
+      }
+      if ('tripDetails' in backup) {
+        await saveSetting(env.DB, 'trip_details', (backup as { tripDetails?: unknown }).tripDetails ?? {});
+      }
     }
     return response;
   } catch (cause) {

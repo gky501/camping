@@ -191,6 +191,22 @@ export interface HomeBase {
   longitude: number;
 }
 
+export interface TripPhoto {
+  id: string;
+  key: string;
+  url: string;
+  name: string;
+  uploadedAt: string;
+  caption?: string;
+}
+
+export interface TripDetail {
+  gateCode?: string;
+  photos: TripPhoto[];
+}
+
+export type TripDetailsMap = Record<string, TripDetail>;
+
 export interface AppState {
   sites: Campsite[];
   stays: Stay[];
@@ -201,6 +217,7 @@ export interface AppState {
   tripChecklists?: TripChecklist[];
   equipmentInventory?: EquipmentInventory;
   homeBase?: HomeBase;
+  tripDetails?: TripDetailsMap;
 }
 
 export interface StayDraft extends Omit<Stay, 'id' | 'createdAt' | 'siteSnapshot'> {
