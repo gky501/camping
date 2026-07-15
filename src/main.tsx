@@ -28,15 +28,18 @@ import './header-utilities.css';
 import './photo-coming-soon.css';
 import './header-cleanup.css';
 import './mobile-overflow-fix.css';
+import './mobile-primary-nav.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';
+import { MobilePrimaryNav } from './components/MobilePrimaryNav';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthGate>
       <App />
       <HeaderUtilities />
+      <MobilePrimaryNav />
     </AuthGate>
   </StrictMode>,
 );
