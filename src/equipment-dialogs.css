@@ -1,0 +1,35 @@
+.equipment-dialog { width: min(680px, 100%); overflow: hidden; }
+.equipment-dialog-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 15px; align-items: start; padding: 24px 25px 20px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg, #f2f8f4, #fbfcfa); }
+.equipment-dialog-header h2 { margin: 0 0 7px; font-size: clamp(1.55rem, 4vw, 2.1rem); line-height: 1.05; }
+.equipment-dialog-header p:not(.eyebrow) { max-width: 520px; margin: 0; color: var(--muted); font-size: .87rem; line-height: 1.5; }
+.equipment-dialog-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; color: #28516d; background: #dcecf6; box-shadow: inset 0 0 0 1px rgba(40,81,109,.08); }
+.equipment-dialog-header .icon-button { margin-top: -3px; }
+.equipment-dialog-body { padding: 22px 25px 8px; background: #fff; }
+.equipment-dialog-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(190px, .7fr); gap: 14px; }
+.equipment-dialog .field { margin-top: 0; }
+.equipment-dialog .field + .field { margin-top: 14px; }
+.equipment-dialog-grid .field + .field { margin-top: 0; }
+.equipment-dialog .field > span { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.equipment-dialog .field > span small { color: #829087; font-weight: 650; }
+.equipment-dialog textarea { resize: vertical; min-height: 92px; }
+.equipment-dialog-error { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; color: #962f2a; background: #fff0ee; font-size: .8rem; font-weight: 750; }
+.equipment-dialog-callout { margin-top: 15px; padding: 12px 14px; border: 1px solid #cfe0d4; border-radius: 12px; color: #3f5c4d; background: #f3f8f4; font-size: .79rem; line-height: 1.5; }
+.equipment-month-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; border: 1px solid #cfd8d1; border-radius: 10px; overflow: hidden; background: #fbfcfa; }
+.equipment-month-input:focus-within { border-color: #6c9b83; box-shadow: 0 0 0 3px rgba(36,91,71,.1); }
+.equipment-month-input input { border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.equipment-month-input span { align-self: stretch; display: grid; place-items: center; padding: 0 13px; border-left: 1px solid #dfe5e0; color: #66756c; background: #f1f5f1; font-size: .78rem; font-weight: 750; }
+.equipment-dialog-actions { position: static; padding: 18px 25px 22px; background: #fff; }
+
+@media (max-width: 620px) {
+  .equipment-dialog-backdrop { align-items: end; padding: 0; }
+  .equipment-dialog { width: 100%; max-height: 94dvh; border-radius: 24px 24px 0 0; }
+  .equipment-dialog-header { grid-template-columns: auto minmax(0, 1fr) auto; gap: 11px; padding: 19px 16px 16px; }
+  .equipment-dialog-icon { width: 42px; height: 42px; border-radius: 13px; }
+  .equipment-dialog-header h2 { font-size: 1.45rem; }
+  .equipment-dialog-header p:not(.eyebrow) { font-size: .8rem; }
+  .equipment-dialog-body { padding: 17px 16px 6px; overflow-y: auto; }
+  .equipment-dialog-grid { grid-template-columns: 1fr; gap: 13px; }
+  .equipment-dialog-grid .field + .field { margin-top: 0; }
+  .equipment-dialog-actions { display: grid; grid-template-columns: 1fr 1.35fr; padding: 14px 16px calc(16px + env(safe-area-inset-bottom)); }
+  .equipment-dialog-actions button { width: 100%; min-height: 48px; }
+}
