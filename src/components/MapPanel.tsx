@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { Bookmark, ExternalLink, Filter, LocateFixed, Maximize2, RotateCcw, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
@@ -103,6 +103,7 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
   const [locateRequest, setLocateRequest] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation>();
   const selectedSite = sites.find((site) => site.id === selectedSiteId);
+  const handleLocationError = useCallback((message: string) => window.alert(message), []);
 
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -220,7 +221,7 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
             fitRequest={fitRequest}
             locateRequest={locateRequest}
             onLocation={setUserLocation}
-            onLocationError={(message) => window.alert(message)}
+            onLocationError={handleLocationError}
           />
           {userLocation && <CircleMarker center={[userLocation.latitude, userLocation.longitude]} radius={8} pathOptions={{ weight: 3, fillOpacity: 1 }}><Popup>You are here</Popup></CircleMarker>}
           {filtered.map((site) => {
