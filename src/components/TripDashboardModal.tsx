@@ -43,6 +43,12 @@ interface ForecastResponse {
   };
 }
 
+interface EquipmentWarning {
+  id: string;
+  tone: 'danger' | 'warning';
+  text: string;
+}
+
 function dateLabel(value: string): string {
   return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(`${value}T12:00:00`));
 }
@@ -131,14 +137,22 @@ export function TripDashboardModal({
     return () => controller.abort();
   }, [location?.latitude, location?.longitude, stay.arrivalDate, stay.departureDate]);
 
-  const equipmentWarnings = useMemo(() => equipmentInventory.items.flatMap((item) => {
-    const life = equipmentLifeInfo(item);
-    if (item.condition === 'replace') return [{ id: `${item.id}-replace`, tone: 'danger' as const, text: equipmentMessage(item.label, 'replace', life.nextDueDate, item.note) }];
-    if (life.status === 'overdue') return [{ id: `${item.id}-overdue`, tone: 'danger' as const, text: equipmentMessage(item.label, 'overdue', life.nextDueDate, item.note) }];
-    if (life.status === 'nearing') return [{ id: `${item.id}-nearing`, tone: 'warning' as const, text: equipmentMessage(item.label, 'nearing', life.nextDueDate, item.note) }];
-    if (item.condition === 'watch') return [{ id: `${item.id}-watch`, tone: 'warning' as const, text: equipmentMessage(item.label, 'watch', life.nextDueDate, item.note) }];
-    return [];
-  }), [equipmentInventory]);
+  const equipmentWarnings = useMemo<EquipmentWarning[]>(() => {
+    const warnings: EquipmentWarning[] = [];
+    for (const item of equipmentInventory.items) {
+      const life = equipmentLifeInfo(item);
+      if (item.condition === 'replace') {
+        warnings.push({ id: `${item.id}-replace`, tone: 'danger', text: equipmentMessage(item.label, 'replace', life.nextDueDate, item.note) });
+      } else if (life.status === 'overdue') {
+        warnings.push({ id: `${item.id}-overdue`, tone: 'danger', text: equipmentMessage(item.label, 'overdue', life.nextDueDate, item.note) });
+      } else if (life.status === 'nearing') {
+        warnings.push({ id: `${item.id}-nearing`, tone: 'warning', text: equipmentMessage(item.label, 'nearing', life.nextDueDate, item.note) });
+      } else if (item.condition === 'watch') {
+        warnings.push({ id: `${item.id}-watch`, tone: 'warning', text: equipmentMessage(item.label, 'watch', life.nextDueDate, item.note) });
+      }
+    }
+    return warnings;
+  }, [equipmentInventory]);
 
   function saveGateCode() {
     onSaveDetail({ ...safeDetail, gateCode: gateCode.trim() || undefined, photos: safeDetail.photos ?? [] });
