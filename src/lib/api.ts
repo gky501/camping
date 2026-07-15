@@ -62,7 +62,12 @@ export async function loadAppState(): Promise<{ state: AppState; mode: 'cloud' |
   try {
     const response = await fetch('/api/bootstrap', { headers: { Accept: 'application/json' } });
     if (!response.ok) throw new Error(`Bootstrap failed: ${response.status}`);
-    const state = normalizeState((await response.json()) as AppState);
+    const rawState = (await response.json()) as AppState;
+    try {
+      const equipmentResponse = await fetch('/api/settings/equipment', { headers: { Accept: 'application/json' } });
+      if (equipmentResponse.ok) rawState.equipmentInventory = await equipmentResponse.json() as EquipmentInventory;
+    } catch { /* equipment falls back to the local/default inventory */ }
+    const state = normalizeState(rawState);
     persistLocal(state);
     return { state, mode: 'cloud' };
   } catch {
