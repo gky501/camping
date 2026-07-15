@@ -1,0 +1,131 @@
+/* Keep mobile layouts inside the viewport while preserving intentional card carousels. */
+html,
+body,
+#root,
+.app-shell,
+.app-main {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 820px) {
+  html,
+  body,
+  #root {
+    overflow-x: clip;
+  }
+
+  .app-header-v2,
+  .app-header-v2 .brand,
+  .app-header-v2 .brand > span:last-child,
+  .app-header-v2 .header-actions,
+  .content-page,
+  .passport-page,
+  .passport-stat-layout,
+  .passport-stat-card,
+  .passport-section,
+  .passport-history-grid,
+  .trip-dashboard-modal,
+  .trip-dashboard-countdown,
+  .trip-dashboard-countdown > div,
+  .trip-dashboard-grid,
+  .trip-dashboard-card,
+  .trip-dashboard-weather-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app-header-v2 .brand > span:last-child {
+    overflow: hidden;
+  }
+
+  /* Each upcoming trip now fits the usable card area instead of enforcing 280px. */
+  .upcoming-trip-rail {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    grid-auto-columns: minmax(0, 100%);
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .upcoming-trip-rail::-webkit-scrollbar,
+  .trip-forecast-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .upcoming-trip-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .upcoming-trip-title,
+  .upcoming-trip-title > div,
+  .upcoming-trip-date {
+    min-width: 0;
+  }
+
+  .upcoming-trip-title h4,
+  .upcoming-trip-title p,
+  .trip-dashboard-countdown h3,
+  .trip-dashboard-countdown p,
+  .trip-countdown-alerts span {
+    overflow-wrap: anywhere;
+  }
+
+  .trip-countdown-alerts span {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  /* Forecast cards scroll inside their panel rather than widening the modal/page. */
+  .trip-forecast-strip {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .trip-forecast-strip > div {
+    flex: 0 0 108px;
+    min-width: 108px;
+    max-width: 108px;
+    scroll-snap-align: start;
+  }
+
+  .passport-month-strip {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .header-utility-menu,
+  .more-menu-card,
+  .modal-card {
+    max-width: calc(100vw - 16px);
+  }
+
+  .trip-dashboard-modal,
+  .modal-card {
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .trip-dashboard-countdown {
+    padding: 17px;
+  }
+
+  .trip-countdown-alerts span {
+    width: 100%;
+    border-radius: 13px;
+  }
+}
