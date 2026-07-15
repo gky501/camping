@@ -67,9 +67,13 @@ export async function loadAppState(): Promise<{ state: AppState; mode: 'cloud' |
     if (!response.ok) throw new Error(`Bootstrap failed: ${response.status}`);
     const rawState = (await response.json()) as AppState;
     try {
-      const equipmentResponse = await fetch('/api/settings/equipment', { headers: { Accept: 'application/json' } });
+      const [equipmentResponse, tripDetailsResponse] = await Promise.all([
+        fetch('/api/settings/equipment', { headers: { Accept: 'application/json' } }),
+        fetch('/api/settings/trip-details', { headers: { Accept: 'application/json' } }),
+      ]);
       if (equipmentResponse.ok) rawState.equipmentInventory = await equipmentResponse.json() as EquipmentInventory;
-    } catch { /* equipment falls back to the local/default inventory */ }
+      if (tripDetailsResponse.ok) rawState.tripDetails = await tripDetailsResponse.json() as TripDetailsMap;
+    } catch { /* settings fall back to local/default values */ }
     const state = normalizeState(rawState);
     persistLocal(state);
     return { state, mode: 'cloud' };
@@ -113,7 +117,7 @@ export async function deleteStayRemote(stayId: string, deleteOrphanSite: boolean
 
 export async function createCamperRemote(camper: CamperProfile): Promise<void> { await request('/api/campers', { method: 'POST', body: JSON.stringify(camper) }); }
 export async function saveCamperRemote(camper: CamperProfile): Promise<void> { await request(`/api/campers/${encodeURIComponent(camper.id)}`, { method: 'PATCH', body: JSON.stringify(camper) }); }
-export async function deleteCamperRemote(camperId: string): Promise<void> { await request(`/api/campers/${encodeURIComponent(camper.id)}`, { method: 'DELETE' }); }
+export async function deleteCamperRemote(camperId: string): Promise<void> { await request(`/api/campers/${encodeURIComponent(camperId)}`, { method: 'DELETE' }); }
 
 export async function saveParkRemote(original: ParkProfile, park: ParkProfile): Promise<void> {
   await request('/api/parks/by-name', { method: 'PATCH', body: JSON.stringify({ ...park, originalName: original.name, originalState: original.state }) });
@@ -122,7 +126,7 @@ export async function saveProfileRemote(profile: PreferenceProfile): Promise<voi
 export async function deleteProfileRemote(profileId: string): Promise<void> { await request(`/api/profiles/${encodeURIComponent(profileId)}`, { method: 'DELETE' }); }
 export async function createSiteRemote(site: Campsite): Promise<void> { await request('/api/sites', { method: 'POST', body: JSON.stringify(site) }); }
 export async function saveSiteRemote(site: Campsite): Promise<void> { await request(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'PATCH', body: JSON.stringify(site) }); }
-export async function deleteSiteRemote(siteId: string): Promise<void> { await request(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' }); }
+export async function deleteSiteRemote(siteId: string): Promise<void> { await request(`/api/sites/${encodeURIComponent(siteId)}`, { method: 'DELETE' }); }
 
 export async function saveChecklistTemplateRemote(template: ChecklistTemplate): Promise<void> {
   await request('/api/checklists/template', { method: 'PUT', body: JSON.stringify(template) });
