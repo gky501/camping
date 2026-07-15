@@ -1,7 +1,9 @@
 import { seedState } from '../data/seed';
 import { DEFAULT_TENT_PROFILE } from './campers';
+import { DEFAULT_CHECKLIST_TEMPLATE } from './checklistDefaults';
+import { DEFAULT_HOME_BASE } from './geo';
 import { mergeParkProfiles } from './parks';
-import type { AppState, CamperProfile, Campsite, ParkProfile, PreferenceProfile, Stay, StayDraft } from '../types';
+import type { AppState, CamperProfile, Campsite, ChecklistTemplate, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist } from '../types';
 
 const STORAGE_KEY = 'camp-ledger-state-v2-wishlist-only';
 
@@ -20,12 +22,30 @@ function normalizeState(state: AppState): AppState {
   const stays = state.stays ?? [];
   const campers = [...(state.campers ?? [])];
   if (!campers.some((camper) => camper.id === DEFAULT_TENT_PROFILE.id || camper.type === 'tent')) campers.push(DEFAULT_TENT_PROFILE);
-  return { ...state, sites, stays, campers, parks: mergeParkProfiles(state.parks, sites, stays) };
+  return {
+    ...state,
+    sites,
+    stays,
+    campers,
+    parks: mergeParkProfiles(state.parks, sites, stays),
+    checklistTemplate: state.checklistTemplate ?? structuredClone(DEFAULT_CHECKLIST_TEMPLATE),
+    tripChecklists: state.tripChecklists ?? [],
+    homeBase: state.homeBase ?? DEFAULT_HOME_BASE,
+  };
 }
 
 function cloneSeed(): AppState {
   const cloned = normalizeState(structuredClone(seedState));
-  return { ...cloned, sites: cloned.sites.filter((site) => site.status === 'wishlist'), stays: [], parks: [], campers: [DEFAULT_TENT_PROFILE] };
+  return {
+    ...cloned,
+    sites: cloned.sites.filter((site) => site.status === 'wishlist'),
+    stays: [],
+    parks: [],
+    campers: [DEFAULT_TENT_PROFILE],
+    checklistTemplate: structuredClone(DEFAULT_CHECKLIST_TEMPLATE),
+    tripChecklists: [],
+    homeBase: DEFAULT_HOME_BASE,
+  };
 }
 
 function readLocal(): AppState | null {
@@ -92,3 +112,15 @@ export async function deleteProfileRemote(profileId: string): Promise<void> { aw
 export async function createSiteRemote(site: Campsite): Promise<void> { await request('/api/sites', { method: 'POST', body: JSON.stringify(site) }); }
 export async function saveSiteRemote(site: Campsite): Promise<void> { await request(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'PATCH', body: JSON.stringify(site) }); }
 export async function deleteSiteRemote(siteId: string): Promise<void> { await request(`/api/sites/${encodeURIComponent(siteId)}`, { method: 'DELETE' }); }
+
+export async function saveChecklistTemplateRemote(template: ChecklistTemplate): Promise<void> {
+  await request('/api/checklists/template', { method: 'PUT', body: JSON.stringify(template) });
+}
+
+export async function saveTripChecklistRemote(checklist: TripChecklist): Promise<void> {
+  await request(`/api/checklists/trips/${encodeURIComponent(checklist.stayId)}`, { method: 'PUT', body: JSON.stringify(checklist) });
+}
+
+export async function saveHomeBaseRemote(homeBase: HomeBase): Promise<void> {
+  await request('/api/settings/home-base', { method: 'PUT', body: JSON.stringify(homeBase) });
+}
