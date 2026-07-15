@@ -43,6 +43,7 @@ export function normalizeEquipmentInventory(value?: EquipmentInventory): Equipme
           label: String(item.label).trim(),
           condition: VALID_CONDITIONS.has(item.condition) ? item.condition : 'good',
           note: item.note?.trim() || undefined,
+          inServiceDate: normalizeDate(item.inServiceDate),
           updatedAt: item.updatedAt || undefined,
           replacementIntervalMonths: Number.isFinite(interval) && interval > 0 ? Math.round(interval) : undefined,
           lastReplacedDate: normalizeDate(item.lastReplacedDate),

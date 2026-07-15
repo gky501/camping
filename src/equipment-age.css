@@ -1,0 +1,13 @@
+.equipment-checklist-age {
+  color: #607685 !important;
+  font-weight: 750 !important;
+  letter-spacing: 0 !important;
+  text-transform: none;
+}
+
+@media (max-width: 520px) {
+  .equipment-age-pill {
+    max-width: 100%;
+    white-space: normal;
+  }
+}

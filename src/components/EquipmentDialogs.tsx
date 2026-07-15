@@ -62,11 +62,12 @@ function DialogShell({
 export function EquipmentItemDialog({ item, onClose, onSave }: {
   item?: EquipmentItem;
   onClose: () => void;
-  onSave: (value: { label: string; note?: string; condition: EquipmentCondition }) => void;
+  onSave: (value: { label: string; note?: string; condition: EquipmentCondition; inServiceDate?: string }) => void;
 }) {
   const [label, setLabel] = useState(item?.label ?? '');
   const [note, setNote] = useState(item?.note ?? '');
   const [condition, setCondition] = useState<EquipmentCondition>(item?.condition ?? 'good');
+  const [inServiceDate, setInServiceDate] = useState(item?.inServiceDate ?? '');
   const [error, setError] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -80,7 +81,11 @@ export function EquipmentItemDialog({ item, onClose, onSave }: {
       inputRef.current?.focus();
       return;
     }
-    onSave({ label: trimmed, note: note.trim() || undefined, condition });
+    if (inServiceDate && inServiceDate > todayValue()) {
+      setError('The in-service date cannot be in the future.');
+      return;
+    }
+    onSave({ label: trimmed, note: note.trim() || undefined, condition, inServiceDate: inServiceDate || undefined });
     onClose();
   }
 
@@ -88,7 +93,7 @@ export function EquipmentItemDialog({ item, onClose, onSave }: {
     <DialogShell
       eyebrow={item ? 'Update equipment' : 'Equipment inventory'}
       title={item ? `Edit ${item.label}` : 'Add equipment'}
-      description="Keep the item name, current condition, and any useful note together."
+      description="Keep the item name, age, current condition, and any useful note together."
       icon={<PackagePlus />}
       submitLabel={item ? 'Save equipment' : 'Add equipment'}
       onClose={onClose}
@@ -108,6 +113,10 @@ export function EquipmentItemDialog({ item, onClose, onSave }: {
           </select>
         </label>
       </div>
+      <label className="field">
+        <span>In service date <small>Optional</small></span>
+        <input type="date" max={todayValue()} value={inServiceDate} onChange={(event) => { setInServiceDate(event.target.value); setError(''); }} />
+      </label>
       {error && <p className="equipment-dialog-error">{error}</p>}
       <label className="field">
         <span>Condition note <small>Optional</small></span>

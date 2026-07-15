@@ -7,6 +7,7 @@ import {
   equipmentLogActionLabel,
   formatEquipmentDate,
 } from '../lib/equipment';
+import { equipmentAgeLabel } from '../lib/equipmentAge';
 import { createId } from '../lib/id';
 import type { EquipmentCondition, EquipmentInventory, EquipmentItem, EquipmentLogAction, EquipmentLogEntry } from '../types';
 import { EquipmentItemDialog, EquipmentLifespanDialog, EquipmentLogDialog } from './EquipmentDialogs';
@@ -32,7 +33,7 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
     saveItems(inventory.items.map((item) => item.id === itemId ? { ...item, ...changes } : item));
   }
 
-  function saveItemForm(value: { label: string; note?: string; condition: EquipmentCondition }) {
+  function saveItemForm(value: { label: string; note?: string; condition: EquipmentCondition; inServiceDate?: string }) {
     if (dialog?.type !== 'item') return;
     if (dialog.item) {
       updateItem(dialog.item.id, { ...value, updatedAt: new Date().toISOString() });
@@ -97,7 +98,7 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
           <span className="equipment-manager-icon"><PackageCheck /></span>
           <div>
             <strong>{inventory.items.length} equipment item{inventory.items.length === 1 ? '' : 's'}</strong>
-            <span>Track condition, replacement lifespan, and a simple history of maintenance or replacement.</span>
+            <span>Track age, condition, replacement lifespan, and a simple history of maintenance or replacement.</span>
           </div>
         </div>
         <button className="primary-button" onClick={() => setDialog({ type: 'item' })}><Plus size={17} /> Add equipment</button>
@@ -107,6 +108,7 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
         <div className="equipment-manager-list">
           {inventory.items.map((item) => {
             const life = equipmentLifeInfo(item);
+            const age = equipmentAgeLabel(item);
             const scheduleText = item.replacementIntervalMonths
               ? item.lastReplacedDate
                 ? `Replace every ${item.replacementIntervalMonths} month${item.replacementIntervalMonths === 1 ? '' : 's'} · next due ${formatEquipmentDate(life.nextDueDate)}`
@@ -117,9 +119,9 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
             return (
               <article className={`equipment-manager-row equipment-${item.condition} life-${life.status}`} key={item.id}>
                 <div className="equipment-manager-item-copy">
-                  <strong>{item.label}</strong>
+                  <div className="equipment-name-line"><strong>{item.label}</strong>{age && <span className="equipment-age-pill">{age} old</span>}</div>
                   <span>{detailText}</span>
-                  <small>{scheduleText}</small>
+                  <small>{item.inServiceDate ? `In service ${formatEquipmentDate(item.inServiceDate)} · ${scheduleText}` : scheduleText}</small>
                 </div>
                 <label className="equipment-condition-field">
                   <span>Condition</span>

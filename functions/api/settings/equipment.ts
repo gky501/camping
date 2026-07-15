@@ -19,6 +19,7 @@ function normalizeInventory(value: unknown) {
       if (!id || !label) return [];
       const condition = String(item.condition || 'good');
       const interval = Number(item.replacementIntervalMonths);
+      const inServiceDate = String(item.inServiceDate || '').trim();
       const lastReplacedDate = String(item.lastReplacedDate || '').trim();
       const rawLog = Array.isArray(item.log) ? item.log : [];
       const log = rawLog.flatMap((rawEntry) => {
@@ -40,6 +41,7 @@ function normalizeInventory(value: unknown) {
         label,
         condition: VALID_CONDITIONS.has(condition) ? condition : 'good',
         note: String(item.note || '').trim() || undefined,
+        inServiceDate: validDate(inServiceDate) ? inServiceDate : undefined,
         updatedAt: String(item.updatedAt || '').trim() || undefined,
         replacementIntervalMonths: Number.isFinite(interval) && interval > 0 ? Math.round(interval) : undefined,
         lastReplacedDate: validDate(lastReplacedDate) ? lastReplacedDate : undefined,
