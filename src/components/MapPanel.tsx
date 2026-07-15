@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
-import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
-import { Bookmark, ExternalLink, Filter, LocateFixed, Maximize2, RotateCcw, Search, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
+import { Filter, LocateFixed, Maximize2, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import type { Campsite, ElectricService, PreferenceProfile, Stay } from '../types';
 import { distanceMiles } from '../lib/geo';
-import { calculateOverall, formatScore, scoreClass } from '../lib/scoring';
+import { calculateOverall } from '../lib/scoring';
+import { ClusteredSiteMarkers } from './ClusteredSiteMarkers';
 import { SiteCard } from './SiteCard';
 
 const DEFAULT_CENTER: [number, number] = [34.95, -92.6];
@@ -17,16 +18,6 @@ type ElectricFilter = 'all' | ElectricService;
 interface UserLocation {
   latitude: number;
   longitude: number;
-}
-
-function createScoreIcon(score: number | null, selected: boolean, wishlist: boolean) {
-  return L.divIcon({
-    className: 'score-marker-shell',
-    html: `<div class="score-marker ${scoreClass(score)} ${wishlist ? 'score-marker-wishlist' : ''} ${selected ? 'score-marker-selected' : ''}"><span>${wishlist ? '–' : formatScore(score)}</span></div>`,
-    iconSize: [44, 44],
-    iconAnchor: [22, 22],
-    popupAnchor: [0, -23],
-  });
 }
 
 function MapController({
@@ -224,43 +215,16 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
             onLocationError={handleLocationError}
           />
           {userLocation && <CircleMarker center={[userLocation.latitude, userLocation.longitude]} radius={8} pathOptions={{ weight: 3, fillOpacity: 1 }}><Popup>You are here</Popup></CircleMarker>}
-          {filtered.map((site) => {
-            const score = calculateOverall(site, profile);
-            const isWishlist = site.status === 'wishlist';
-            const hasTrips = stays.some((stay) => stay.siteId === site.id);
-            const distance = userLocation ? distanceMiles(userLocation, site) : undefined;
-            return (
-              <Marker
-                key={site.id}
-                position={[site.latitude, site.longitude]}
-                icon={createScoreIcon(score, selectedSiteId === site.id, isWishlist)}
-                eventHandlers={{ click: () => onSelectSite(site) }}
-              >
-                <Popup minWidth={245}>
-                  <div className="map-popup">
-                    <p className="eyebrow">{site.state}</p>
-                    <h3>{site.park}</h3>
-                    <p>{site.loop || 'Site'} · Site {site.siteNumber}{distance !== undefined ? ` · ${Math.round(distance)} mi away` : ''}</p>
-                    {isWishlist ? (
-                      <div className="popup-score wishlist"><span><Bookmark size={15} fill="currentColor" /> Wish list</span><strong>Not visited</strong></div>
-                    ) : (
-                      <div className="popup-score"><span>Your match</span><strong>{formatScore(score)}</strong></div>
-                    )}
-                    <p>{site.notes || (isWishlist ? 'Saved to try later.' : 'No notes yet.')}</p>
-                    <div className="map-popup-actions">
-                      <button className="primary-button small" onClick={() => onLogStay(site)}>{isWishlist ? 'Log first stay' : 'Log another stay'}</button>
-                      <a className="secondary-button small" href={`https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}`} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Directions</a>
-                      {!hasTrips && (
-                        <button className="text-button destructive-text-button small" onClick={() => void deleteOrphanSite(site)}>
-                          <Trash2 size={15} /> Delete campsite
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </Popup>
-              </Marker>
-            );
-          })}
+          <ClusteredSiteMarkers
+            sites={filtered}
+            stays={stays}
+            profile={profile}
+            selectedSiteId={selectedSiteId}
+            userLocation={userLocation}
+            onSelectSite={onSelectSite}
+            onLogStay={onLogStay}
+            onDeleteSite={deleteOrphanSite}
+          />
         </MapContainer>
         <div className="map-tool-stack">
           <button title="Fit all filtered campsites" onClick={() => setFitRequest((value) => value + 1)}><Maximize2 /></button>
@@ -272,7 +236,8 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
           <span><i className="legend-dot score-fair" /> 3.0+</span>
           <span><i className="legend-dot score-poor" /> 2.0+</span>
           <span><i className="legend-dot score-bad" /> Under 2</span>
-          <span><i className="legend-dot score-empty" /> Wish list</span>
+          <span><i className="legend-dot score-empty wishlist-legend-dot" /> Wish list</span>
+          <span><i className="legend-dot cluster-legend-dot" /> Cluster</span>
         </div>
       </div>
     </section>
