@@ -28,7 +28,7 @@ interface AuthUserRow extends Record<string, unknown> {
 const encoder = new TextEncoder();
 const SESSION_COOKIE = 'camp_ledger_session';
 const SESSION_DAYS = 30;
-const PASSWORD_ITERATIONS = 310_000;
+const PASSWORD_ITERATIONS = 100_000;
 
 function bytesToHex(bytes: Uint8Array): string {
   return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
