@@ -4,7 +4,8 @@ import { DEFAULT_CHECKLIST_TEMPLATE } from './checklistDefaults';
 import { DEFAULT_EQUIPMENT_INVENTORY, normalizeEquipmentInventory } from './equipment';
 import { DEFAULT_HOME_BASE } from './geo';
 import { mergeParkProfiles } from './parks';
-import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist } from '../types';
+import { normalizeTripDetails } from './tripDashboard';
+import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist, TripDetailsMap, TripPhoto } from '../types';
 
 const STORAGE_KEY = 'camp-ledger-state-v2-wishlist-only';
 
@@ -33,6 +34,7 @@ function normalizeState(state: AppState): AppState {
     tripChecklists: state.tripChecklists ?? [],
     equipmentInventory: normalizeEquipmentInventory(state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY),
     homeBase: state.homeBase ?? DEFAULT_HOME_BASE,
+    tripDetails: normalizeTripDetails(state.tripDetails),
   };
 }
 
@@ -48,6 +50,7 @@ function cloneSeed(): AppState {
     tripChecklists: [],
     equipmentInventory: structuredClone(DEFAULT_EQUIPMENT_INVENTORY),
     homeBase: DEFAULT_HOME_BASE,
+    tripDetails: {},
   };
 }
 
@@ -110,7 +113,7 @@ export async function deleteStayRemote(stayId: string, deleteOrphanSite: boolean
 
 export async function createCamperRemote(camper: CamperProfile): Promise<void> { await request('/api/campers', { method: 'POST', body: JSON.stringify(camper) }); }
 export async function saveCamperRemote(camper: CamperProfile): Promise<void> { await request(`/api/campers/${encodeURIComponent(camper.id)}`, { method: 'PATCH', body: JSON.stringify(camper) }); }
-export async function deleteCamperRemote(camperId: string): Promise<void> { await request(`/api/campers/${encodeURIComponent(camperId)}`, { method: 'DELETE' }); }
+export async function deleteCamperRemote(camperId: string): Promise<void> { await request(`/api/campers/${encodeURIComponent(camper.id)}`, { method: 'DELETE' }); }
 
 export async function saveParkRemote(original: ParkProfile, park: ParkProfile): Promise<void> {
   await request('/api/parks/by-name', { method: 'PATCH', body: JSON.stringify({ ...park, originalName: original.name, originalState: original.state }) });
@@ -119,7 +122,7 @@ export async function saveProfileRemote(profile: PreferenceProfile): Promise<voi
 export async function deleteProfileRemote(profileId: string): Promise<void> { await request(`/api/profiles/${encodeURIComponent(profileId)}`, { method: 'DELETE' }); }
 export async function createSiteRemote(site: Campsite): Promise<void> { await request('/api/sites', { method: 'POST', body: JSON.stringify(site) }); }
 export async function saveSiteRemote(site: Campsite): Promise<void> { await request(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'PATCH', body: JSON.stringify(site) }); }
-export async function deleteSiteRemote(siteId: string): Promise<void> { await request(`/api/sites/${encodeURIComponent(siteId)}`, { method: 'DELETE' }); }
+export async function deleteSiteRemote(siteId: string): Promise<void> { await request(`/api/sites/${encodeURIComponent(site.id)}`, { method: 'DELETE' }); }
 
 export async function saveChecklistTemplateRemote(template: ChecklistTemplate): Promise<void> {
   await request('/api/checklists/template', { method: 'PUT', body: JSON.stringify(template) });
@@ -135,4 +138,24 @@ export async function saveEquipmentInventoryRemote(inventory: EquipmentInventory
 
 export async function saveHomeBaseRemote(homeBase: HomeBase): Promise<void> {
   await request('/api/settings/home-base', { method: 'PUT', body: JSON.stringify(homeBase) });
+}
+
+export async function saveTripDetailsRemote(tripDetails: TripDetailsMap): Promise<void> {
+  await request('/api/settings/trip-details', { method: 'PUT', body: JSON.stringify(tripDetails) });
+}
+
+export async function uploadTripPhotoRemote(stayId: string, file: File): Promise<TripPhoto> {
+  const form = new FormData();
+  form.set('stayId', stayId);
+  form.set('photo', file);
+  const response = await fetch('/api/photos', { method: 'POST', body: form });
+  const result = await response.json().catch(() => ({})) as TripPhoto & { error?: string };
+  if (!response.ok) throw new Error(result.error || `Photo upload failed: ${response.status}`);
+  return result;
+}
+
+export async function deleteTripPhotoRemote(key: string): Promise<void> {
+  const response = await fetch(`/api/photos?key=${encodeURIComponent(key)}`, { method: 'DELETE' });
+  const result = await response.json().catch(() => ({})) as { error?: string };
+  if (!response.ok) throw new Error(result.error || `Photo delete failed: ${response.status}`);
 }
