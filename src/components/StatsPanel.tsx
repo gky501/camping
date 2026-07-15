@@ -4,6 +4,9 @@ import { distanceMiles } from '../lib/geo';
 import { calculateOverall, formatScore } from '../lib/scoring';
 import type { CamperProfile, Campsite, HomeBase, PreferenceProfile, Stay } from '../types';
 
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 interface StatsPanelProps {
   sites: Campsite[];
   stays: Stay[];
@@ -49,6 +52,31 @@ function formatDate(value: string): string {
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(`${value}T12:00:00`));
 }
 
+function weekdayIndex(value: string): number | undefined {
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? undefined : date.getDay();
+}
+
+function distributeNightsByMonth(stays: Stay[]): number[] {
+  const monthlyNights = Array.from({ length: 12 }, () => 0);
+  for (const stay of stays) {
+    const arrival = new Date(`${stay.arrivalDate}T12:00:00`);
+    if (Number.isNaN(arrival.getTime())) continue;
+    for (let night = 0; night < stay.nights; night += 1) {
+      const nightDate = new Date(arrival);
+      nightDate.setDate(arrival.getDate() + night);
+      monthlyNights[nightDate.getMonth()] += 1;
+    }
+  }
+  return monthlyNights;
+}
+
+function mostCommonWeekday(counts: number[]): string | undefined {
+  const highest = Math.max(...counts, 0);
+  if (!highest) return undefined;
+  return WEEKDAY_LABELS[counts.indexOf(highest)];
+}
+
 export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHomeBase }: StatsPanelProps) {
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().slice(0, 10);
@@ -67,6 +95,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
   const yearStays = useMemo(() => stays.filter((stay) => Number(stay.arrivalDate.slice(0, 4)) === year), [stays, year]);
   const yearStartedStays = useMemo(() => yearStays.filter((stay) => stay.arrivalDate <= today), [today, yearStays]);
   const startedStays = useMemo(() => stays.filter((stay) => stay.arrivalDate <= today), [stays, today]);
+  const completedStays = useMemo(() => stays.filter((stay) => stay.departureDate <= today), [stays, today]);
 
   const yearStats = useMemo(() => {
     const monthlyNights = Array.from({ length: 12 }, () => 0);
@@ -93,6 +122,24 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
       monthlyNights,
     };
   }, [sites, today, yearStartedStays, yearStays]);
+
+  const lifetimePatterns = useMemo(() => {
+    const checkIns = Array.from({ length: 7 }, () => 0);
+    const checkOuts = Array.from({ length: 7 }, () => 0);
+    for (const stay of completedStays) {
+      const checkInDay = weekdayIndex(stay.arrivalDate);
+      const checkOutDay = weekdayIndex(stay.departureDate);
+      if (checkInDay !== undefined) checkIns[checkInDay] += 1;
+      if (checkOutDay !== undefined) checkOuts[checkOutDay] += 1;
+    }
+    return {
+      monthlyNights: distributeNightsByMonth(completedStays),
+      checkIns,
+      checkOuts,
+      mostCommonCheckIn: mostCommonWeekday(checkIns),
+      mostCommonCheckOut: mostCommonWeekday(checkOuts),
+    };
+  }, [completedStays]);
 
   const records = useMemo(() => {
     const siteGroups = new Map<string, { stays: Stay[]; location?: StayLocation }>();
@@ -182,7 +229,8 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
   }
 
   const maxMonthlyNights = Math.max(...yearStats.monthlyNights, 1);
-  const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const maxLifetimeMonthlyNights = Math.max(...lifetimePatterns.monthlyNights, 1);
+  const maxWeekdayCount = Math.max(...lifetimePatterns.checkIns, ...lifetimePatterns.checkOuts, 1);
   const hasFurthestDestination = Boolean(records.furthestStay && records.furthestStay.distance >= 0);
 
   return (
@@ -207,7 +255,7 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
           <div className="stats-card-heading"><div><p className="eyebrow">Season at a glance</p><h3>Nights by month</h3></div><BarChart3 /></div>
           <div className="month-bar-chart">
             {yearStats.monthlyNights.map((nights, index) => (
-              <div className="month-bar-column" key={monthLabels[index]}><span>{nights || ''}</span><div><i style={{ height: `${Math.max(nights ? (nights / maxMonthlyNights) * 100 : 3, 3)}%` }} /></div><small>{monthLabels[index]}</small></div>
+              <div className="month-bar-column" key={MONTH_LABELS[index]}><span>{nights || ''}</span><div><i style={{ height: `${Math.max(nights ? (nights / maxMonthlyNights) * 100 : 3, 3)}%` }} /></div><small>{MONTH_LABELS[index]}</small></div>
             ))}
           </div>
           {!yearStartedStays.length && <p className="stats-empty-note">No trips have started in {year} yet.</p>}
@@ -222,6 +270,36 @@ export function StatsPanel({ sites, stays, campers, profile, homeBase, onSaveHom
           </div>
           <div className="button-row"><button className="secondary-button" onClick={useCurrentLocation}><LocateFixed size={17} /> {locating ? 'Locating…' : 'Use current location'}</button><button className="primary-button" onClick={() => onSaveHomeBase(homeDraft)}>Save home base</button></div>
           <p className="home-base-help">Distance records use straight-line mileage from this location, so they are useful for comparisons but will be shorter than driving distance.</p>
+        </article>
+      </div>
+
+      <div className="stats-section-heading lifetime-pattern-heading"><div><p className="eyebrow">All completed trips</p><h3>Lifetime camping patterns</h3></div></div>
+      <div className="stats-lifetime-grid">
+        <article className="stats-card monthly-card lifetime-monthly-card">
+          <div className="stats-card-heading"><div><p className="eyebrow">Across every year</p><h3>Lifetime nights by month</h3></div><Moon /></div>
+          <div className="month-bar-chart">
+            {lifetimePatterns.monthlyNights.map((nights, index) => (
+              <div className="month-bar-column" key={MONTH_LABELS[index]}><span>{nights || ''}</span><div><i style={{ height: `${Math.max(nights ? (nights / maxLifetimeMonthlyNights) * 100 : 3, 3)}%` }} /></div><small>{MONTH_LABELS[index]}</small></div>
+            ))}
+          </div>
+          <p className="stats-card-note">Nights are assigned to the month they actually occurred, including trips that crossed into a new month.</p>
+        </article>
+
+        <article className="stats-card weekday-card">
+          <div className="stats-card-heading"><div><p className="eyebrow">Travel rhythm</p><h3>Check-in & checkout days</h3></div><CalendarDays /></div>
+          <div className="weekday-legend"><span><i className="check-in" /> Check in</span><span><i className="check-out" /> Check out</span></div>
+          <div className="weekday-chart">
+            {WEEKDAY_LABELS.map((label, index) => (
+              <div className="weekday-row" key={label}>
+                <span className="weekday-name">{label}</span>
+                <div className="weekday-row-series">
+                  <div className="weekday-series check-in"><div className="weekday-track"><i style={{ width: `${(lifetimePatterns.checkIns[index] / maxWeekdayCount) * 100}%` }} /></div><strong>{lifetimePatterns.checkIns[index]}</strong></div>
+                  <div className="weekday-series check-out"><div className="weekday-track"><i style={{ width: `${(lifetimePatterns.checkOuts[index] / maxWeekdayCount) * 100}%` }} /></div><strong>{lifetimePatterns.checkOuts[index]}</strong></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="stats-card-note">{completedStays.length ? `Most common: ${lifetimePatterns.mostCommonCheckIn ?? '—'} check-ins · ${lifetimePatterns.mostCommonCheckOut ?? '—'} checkouts` : 'Complete a trip to begin building your weekday pattern.'}</p>
         </article>
       </div>
 
