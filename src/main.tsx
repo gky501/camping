@@ -10,6 +10,7 @@ import './campers.css';
 import './data-tools.css';
 import './checklists.css';
 import './equipment.css';
+import './equipment-age.css';
 import './checklist-dialogs.css';
 import './equipment-dialogs.css';
 import './stats.css';
