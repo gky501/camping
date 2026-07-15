@@ -5,6 +5,7 @@ import {
   Camera,
   CheckCircle2,
   ClipboardCheck,
+  CloudRain,
   CloudSun,
   ExternalLink,
   ImagePlus,
@@ -24,6 +25,8 @@ import { equipmentLifeInfo, formatEquipmentDate } from '../lib/equipment';
 import { formatDateRange } from '../lib/dates';
 import { camperSiteFit, countdownCopy, wazeDirectionsUrl, weatherCodeLabel } from '../lib/tripDashboard';
 import type { CamperProfile, Campsite, EquipmentInventory, Stay, TripDetail, TripPhoto } from '../types';
+
+const HIGH_RAIN_CHANCE = 60;
 
 interface ForecastDay {
   date: string;
@@ -49,8 +52,21 @@ interface EquipmentWarning {
   text: string;
 }
 
+interface BannerPresentation {
+  tone: 'default' | 'active' | 'wet';
+  eyebrow: string;
+  alerts: string[];
+}
+
 function dateLabel(value: string): string {
   return new Intl.DateTimeFormat('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).format(new Date(`${value}T12:00:00`));
+}
+
+function localDateKey(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function equipmentMessage(label: string, kind: 'replace' | 'overdue' | 'nearing' | 'watch', dueDate?: string, note?: string): string {
@@ -137,6 +153,29 @@ export function TripDashboardModal({
     return () => controller.abort();
   }, [location?.latitude, location?.longitude, stay.arrivalDate, stay.departureDate]);
 
+  const banner = useMemo<BannerPresentation>(() => {
+    const today = localDateKey();
+    const loadIn = forecast.find((day) => day.date === stay.arrivalDate);
+    const loadOut = forecast.find((day) => day.date === stay.departureDate);
+    const wetLoadIn = (loadIn?.precipitation ?? 0) >= HIGH_RAIN_CHANCE;
+    const wetLoadOut = (loadOut?.precipitation ?? 0) >= HIGH_RAIN_CHANCE;
+    const isUpcoming = today < stay.arrivalDate;
+    const isCheckInDay = today === stay.arrivalDate;
+    const isInProgress = today >= stay.arrivalDate && today <= stay.departureDate;
+
+    const alerts = [
+      wetLoadIn ? `Wet load-in expected · ${loadIn?.precipitation}% rain` : '',
+      wetLoadOut ? `Wet load-out expected · ${loadOut?.precipitation}% rain` : '',
+    ].filter(Boolean);
+
+    if (isCheckInDay && wetLoadIn) return { tone: 'wet', eyebrow: 'Wet load-in expected', alerts };
+    if (isInProgress && wetLoadOut) return { tone: 'wet', eyebrow: 'Wet load-out expected', alerts };
+    if (isInProgress) return { tone: 'active', eyebrow: 'Camping in progress', alerts };
+    if (isUpcoming && wetLoadIn) return { tone: 'wet', eyebrow: 'Wet load-in expected', alerts };
+    if (isUpcoming && wetLoadOut) return { tone: 'wet', eyebrow: 'Wet load-out expected', alerts };
+    return { tone: 'default', eyebrow: countdown.eyebrow, alerts };
+  }, [countdown.eyebrow, forecast, stay.arrivalDate, stay.departureDate]);
+
   const equipmentWarnings = useMemo<EquipmentWarning[]>(() => {
     const warnings: EquipmentWarning[] = [];
     for (const item of equipmentInventory.items) {
@@ -195,9 +234,14 @@ export function TripDashboardModal({
           <button className="icon-button" onClick={onClose} aria-label="Close"><X /></button>
         </div>
 
-        <section className="trip-dashboard-countdown">
-          <div><p className="eyebrow">{countdown.eyebrow}</p><h3>{countdown.headline}</h3><p>{countdown.detail} · {formatDateRange(stay.arrivalDate, stay.departureDate)}</p></div>
-          <CalendarDays />
+        <section className={`trip-dashboard-countdown tone-${banner.tone}`}>
+          <div>
+            <p className="eyebrow">{banner.eyebrow}</p>
+            <h3>{countdown.headline}</h3>
+            <p>{countdown.detail} · {formatDateRange(stay.arrivalDate, stay.departureDate)}</p>
+            {banner.alerts.length > 0 && <div className="trip-countdown-alerts">{banner.alerts.map((alert) => <span key={alert}><CloudRain size={15} /> {alert}</span>)}</div>}
+          </div>
+          {banner.tone === 'wet' ? <CloudRain /> : banner.tone === 'active' ? <TentTree /> : <CalendarDays />}
         </section>
 
         <div className="trip-dashboard-grid">
@@ -220,6 +264,7 @@ export function TripDashboardModal({
             {forecastStatus === 'loading' && <p className="trip-dashboard-muted"><LoaderCircle className="spin" size={17} /> Loading forecast…</p>}
             {forecastStatus === 'unavailable' && <p className="trip-dashboard-muted">The trip is outside the available forecast window or weather data could not be loaded yet. Check again closer to departure.</p>}
             {forecastStatus === 'ready' && <div className="trip-forecast-strip">{forecast.map((day) => <div key={day.date}><strong>{dateLabel(day.date)}</strong><span>{weatherCodeLabel(day.code)}</span><b>{day.high}° / {day.low}°</b><small>{day.precipitation}% rain</small></div>)}</div>}
+            <p className="trip-weather-source">Forecast by Open-Meteo using the campsite’s saved coordinates. Wet load alerts appear at {HIGH_RAIN_CHANCE}% rain chance or higher.</p>
           </section>
 
           <section className="trip-dashboard-card trip-dashboard-gate-card">
