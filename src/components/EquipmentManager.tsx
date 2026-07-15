@@ -7,7 +7,7 @@ import {
   formatEquipmentDate,
 } from '../lib/equipment';
 import { createId } from '../lib/id';
-import type { EquipmentCondition, EquipmentInventory, EquipmentItem, EquipmentLogAction } from '../types';
+import type { EquipmentCondition, EquipmentInventory, EquipmentItem, EquipmentLogAction, EquipmentLogEntry } from '../types';
 
 interface EquipmentManagerProps {
   inventory: EquipmentInventory;
@@ -117,10 +117,13 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
 
     const noteAnswer = window.prompt('Optional note:', '');
     if (noteAnswer === null) return;
-    const log = [
-      { id: createId('equipment-log'), action, date, note: noteAnswer.trim() || undefined },
-      ...(item.log ?? []),
-    ].sort((a, b) => b.date.localeCompare(a.date));
+    const entry: EquipmentLogEntry = {
+      id: createId('equipment-log'),
+      action,
+      date,
+      note: noteAnswer.trim() || undefined,
+    };
+    const log = [entry, ...(item.log ?? [])].sort((a, b) => b.date.localeCompare(a.date));
 
     updateItem(item.id, {
       log,
@@ -132,9 +135,13 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
 
   function deleteLog(item: EquipmentItem, logId: string) {
     if (!window.confirm('Delete this equipment log entry?')) return;
+    const removed = (item.log ?? []).find((entry) => entry.id === logId);
     const log = (item.log ?? []).filter((entry) => entry.id !== logId);
     const latestReplacement = log.find((entry) => entry.action === 'replaced');
-    updateItem(item.id, { log, lastReplacedDate: latestReplacement?.date });
+    updateItem(item.id, {
+      log,
+      lastReplacedDate: removed?.action === 'replaced' ? latestReplacement?.date : item.lastReplacedDate,
+    });
   }
 
   function deleteItem(item: EquipmentItem) {
@@ -164,11 +171,13 @@ export function EquipmentManager({ inventory, onSave }: EquipmentManagerProps) {
                 ? `Replace every ${item.replacementIntervalMonths} month${item.replacementIntervalMonths === 1 ? '' : 's'} · next due ${formatEquipmentDate(life.nextDueDate)}`
                 : `Replace every ${item.replacementIntervalMonths} month${item.replacementIntervalMonths === 1 ? '' : 's'} · last replacement not recorded`
               : 'No replacement lifespan set';
+            const detailText = item.note
+              ?? (item.lastReplacedDate ? `Last replaced ${formatEquipmentDate(item.lastReplacedDate)}` : 'No condition note');
             return (
               <article className={`equipment-manager-row equipment-${item.condition} life-${life.status}`} key={item.id}>
                 <div className="equipment-manager-item-copy">
                   <strong>{item.label}</strong>
-                  <span>{item.note || formatEquipmentDate(item.lastReplacedDate) !== 'Not set' ? item.note || `Last replaced ${formatEquipmentDate(item.lastReplacedDate)}` : 'No condition note'}</span>
+                  <span>{detailText}</span>
                   <small>{scheduleText}</small>
                 </div>
                 <label className="equipment-condition-field">
