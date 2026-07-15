@@ -92,16 +92,13 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translateY(-6px) scale(.98);
-  transform-origin: top right;
-  transition: opacity .14s ease, transform .14s ease, visibility .14s ease;
+  transition: opacity .14s ease, visibility .14s ease;
 }
 
 .header-utility-menu.open {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translateY(0) scale(1);
 }
 
 .header-utility-menu-heading {
