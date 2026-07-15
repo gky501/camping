@@ -11,15 +11,16 @@ import { ParksPanel } from './components/ParksPanel';
 import { PreferencesPanel } from './components/PreferencesPanel';
 import { StatsPanel } from './components/StatsPanel';
 import { StayModal } from './components/StayModal';
+import { TripDashboardModal } from './components/TripDashboardModal';
 import { WishlistModal } from './components/WishlistModal';
 import { WishlistPanel } from './components/WishlistPanel';
-import { createCamperRemote, createSiteRemote, createStayRemote, deleteCamperRemote, deleteProfileRemote, deleteSiteRemote, deleteStayRemote, loadAppState, persistLocal, saveCamperRemote, saveChecklistTemplateRemote, saveEquipmentInventoryRemote, saveHomeBaseRemote, saveParkRemote, saveProfileRemote, saveSiteRemote, saveTripChecklistRemote, updateStayRemote } from './lib/api';
+import { createCamperRemote, createSiteRemote, createStayRemote, deleteCamperRemote, deleteProfileRemote, deleteSiteRemote, deleteStayRemote, deleteTripPhotoRemote, loadAppState, persistLocal, saveCamperRemote, saveChecklistTemplateRemote, saveEquipmentInventoryRemote, saveHomeBaseRemote, saveParkRemote, saveProfileRemote, saveSiteRemote, saveTripChecklistRemote, saveTripDetailsRemote, updateStayRemote } from './lib/api';
 import { DEFAULT_CHECKLIST_TEMPLATE } from './lib/checklistDefaults';
 import { DEFAULT_EQUIPMENT_INVENTORY } from './lib/equipment';
 import { DEFAULT_HOME_BASE } from './lib/geo';
 import { createId } from './lib/id';
 import { mergeParkProfiles, renameParkRecords } from './lib/parks';
-import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist, WishlistSiteDraft } from './types';
+import type { AppState, CamperProfile, Campsite, ChecklistTemplate, EquipmentInventory, HomeBase, ParkProfile, PreferenceProfile, Stay, StayDraft, TripChecklist, TripDetail, TripDetailsMap, WishlistSiteDraft } from './types';
 
 const tabs = [
   { id: 'map', label: 'Map', icon: Map },
@@ -42,6 +43,7 @@ export default function App() {
   const [activeProfileId, setActiveProfileId] = useState('');
   const [selectedSiteId, setSelectedSiteId] = useState<string>();
   const [checklistStayId, setChecklistStayId] = useState<string>();
+  const [dashboardStay, setDashboardStay] = useState<Stay>();
   const [staySite, setStaySite] = useState<Campsite | undefined>();
   const [editingStay, setEditingStay] = useState<Stay | undefined>();
   const [showStayModal, setShowStayModal] = useState(false);
@@ -67,10 +69,11 @@ export default function App() {
   );
 
   function openStay(site?: Campsite) { setEditingStay(undefined); setStaySite(site); setShowStayModal(true); }
-  function openEditStay(stay: Stay) { setEditingStay(stay); setStaySite(state?.sites.find((site) => site.id === stay.siteId)); setShowStayModal(true); }
+  function openEditStay(stay: Stay) { setDashboardStay(undefined); setEditingStay(stay); setStaySite(state?.sites.find((site) => site.id === stay.siteId)); setShowStayModal(true); }
   function closeStayModal() { setShowStayModal(false); setStaySite(undefined); setEditingStay(undefined); }
   function selectSite(site: Campsite) { setSelectedSiteId(site.id); }
-  function openChecklistForStay(stay: Stay) { setChecklistStayId(stay.id); setTab('checklist'); }
+  function openChecklistForStay(stay: Stay) { setDashboardStay(undefined); setChecklistStayId(stay.id); setTab('checklist'); }
+  function openDashboardForStay(stay: Stay) { setDashboardStay(stay); }
 
   function saveStay(draft: StayDraft) {
     if (!state) return;
@@ -132,16 +135,23 @@ export default function App() {
       ? state.sites.filter((item) => item.id !== stay.siteId)
       : state.sites.map((item) => item.id === stay.siteId && otherSiteStays.length === 0 ? { ...item, status: 'wishlist' as const } : item);
     const nextParks = mergeParkProfiles(state.parks, nextSites, nextStays);
+    const nextTripDetails = { ...(state.tripDetails ?? {}) };
+    const removedDetail = nextTripDetails[stay.id];
+    delete nextTripDetails[stay.id];
     setState({
       ...state,
       sites: nextSites,
       stays: nextStays,
       parks: nextParks,
       tripChecklists: (state.tripChecklists ?? []).filter((checklist) => checklist.stayId !== stay.id),
+      tripDetails: nextTripDetails,
     });
     if (deleteOrphanSite && selectedSiteId === stay.siteId) setSelectedSiteId(undefined);
     if (checklistStayId === stay.id) setChecklistStayId(undefined);
+    if (dashboardStay?.id === stay.id) setDashboardStay(undefined);
     deleteStayRemote(stay.id, deleteOrphanSite).catch(() => setMode('local'));
+    saveTripDetailsRemote(nextTripDetails).catch(() => setMode('local'));
+    for (const photo of removedDetail?.photos ?? []) deleteTripPhotoRemote(photo.key).catch(() => undefined);
   }
 
   function openCamper(camper?: CamperProfile) { setCamperToEdit(camper); setShowCamperModal(true); }
@@ -238,6 +248,13 @@ export default function App() {
     saveHomeBaseRemote(homeBase).catch(() => setMode('local'));
   }
 
+  function saveTripDetail(stayId: string, detail: TripDetail) {
+    if (!state) return;
+    const tripDetails: TripDetailsMap = { ...(state.tripDetails ?? {}), [stayId]: detail };
+    setState({ ...state, tripDetails });
+    saveTripDetailsRemote(tripDetails).catch(() => setMode('local'));
+  }
+
   if (!state || !activeProfile) return <div className="loading-screen"><TentTree size={42} /><strong>Loading your campsites…</strong></div>;
 
   return (
@@ -254,7 +271,7 @@ export default function App() {
 
       <main className="app-main">
         {tab === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} />}
-        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} onDelete={deleteStay} onChecklist={openChecklistForStay} />}
+        {tab === 'diary' && <DiaryPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} onAdd={() => openStay()} onEdit={openEditStay} onDelete={deleteStay} onChecklist={openChecklistForStay} onDashboard={openDashboardForStay} />}
         {tab === 'checklist' && <ChecklistPanel sites={state.sites} stays={state.stays} template={state.checklistTemplate ?? DEFAULT_CHECKLIST_TEMPLATE} tripChecklists={state.tripChecklists ?? []} equipmentInventory={state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY} initialStayId={checklistStayId} onSaveTemplate={saveChecklistTemplate} onSaveTripChecklist={saveTripChecklist} onSaveEquipmentInventory={saveEquipmentInventory} />}
         {tab === 'stats' && <StatsPanel sites={state.sites} stays={state.stays} campers={state.campers ?? []} profile={activeProfile} homeBase={state.homeBase ?? DEFAULT_HOME_BASE} onSaveHomeBase={saveHomeBase} />}
         {tab === 'parks' && <ParksPanel parks={state.parks ?? []} sites={state.sites} stays={state.stays} profile={activeProfile} onEdit={setParkToEdit} onSelectSite={(site) => { selectSite(site); setTab('map'); }} onLogStay={openStay} />}
@@ -267,6 +284,7 @@ export default function App() {
       <nav className="mobile-nav" aria-label="Mobile navigation">{tabs.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><Icon size={20} /><span>{label}</span></button>)}</nav>
 
       {showStayModal && <StayModal sites={state.sites} campers={state.campers ?? []} initialSite={staySite} initialStay={editingStay} onClose={closeStayModal} onSave={saveStay} />}
+      {dashboardStay && <TripDashboardModal stay={dashboardStay} site={state.sites.find((site) => site.id === dashboardStay.siteId)} camper={(state.campers ?? []).find((camper) => camper.id === dashboardStay.camperId)} equipmentInventory={state.equipmentInventory ?? DEFAULT_EQUIPMENT_INVENTORY} detail={state.tripDetails?.[dashboardStay.id]} onSaveDetail={(detail) => saveTripDetail(dashboardStay.id, detail)} onChecklist={() => openChecklistForStay(dashboardStay)} onEdit={() => openEditStay(dashboardStay)} onClose={() => setDashboardStay(undefined)} />}
       {showWishlistModal && <WishlistModal site={wishlistSite} onClose={() => { setShowWishlistModal(false); setWishlistSite(undefined); }} onSave={saveWishlistSite} />}
       {parkToEdit && <ParkEditModal park={parkToEdit} onClose={() => setParkToEdit(undefined)} onSave={savePark} />}
       {showCamperModal && <CamperEditModal camper={camperToEdit} onClose={() => { setShowCamperModal(false); setCamperToEdit(undefined); }} onSave={saveCamper} />}
