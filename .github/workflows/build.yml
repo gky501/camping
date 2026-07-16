@@ -22,4 +22,17 @@ jobs:
         run: npm install
 
       - name: Build
-        run: npm run build
+        id: build
+        continue-on-error: true
+        run: npm run build > build-output.txt 2>&1
+
+      - name: Upload build output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: build-output.txt
+
+      - name: Fail when build failed
+        if: steps.build.outcome == 'failure'
+        run: exit 1
