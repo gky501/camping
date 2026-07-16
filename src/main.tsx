@@ -33,6 +33,7 @@ import './camper-maintenance.css';
 import './nav-maintenance-fix.css';
 import './header-nav-correction.css';
 import './header-polish.css';
+import './passport-hero-trip.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';

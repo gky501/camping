@@ -40,6 +40,12 @@ function currency(value: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value);
 }
 
+function daysUntil(from: string, to: string): number {
+  const start = new Date(`${from}T12:00:00`).getTime();
+  const end = new Date(`${to}T12:00:00`).getTime();
+  return Math.max(0, Math.round((end - start) / 86_400_000));
+}
+
 export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, onChecklist, onDashboard, onOpenRecap }: {
   sites: Campsite[];
   stays: Stay[];
@@ -74,6 +80,17 @@ export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, 
     .sort((a, b) => b.departureDate.localeCompare(a.departureDate)), [stays]);
   const yearStays = useMemo(() => stays.filter((stay) => Number(stay.arrivalDate.slice(0, 4)) === year), [stays, year]);
   const yearStarted = useMemo(() => yearStays.filter((stay) => stay.arrivalDate <= today), [today, yearStays]);
+
+  const heroTrip = useMemo(() => {
+    const active = stays
+      .filter((stay) => stay.arrivalDate <= today && stay.departureDate > today)
+      .sort((a, b) => a.departureDate.localeCompare(b.departureDate))[0];
+    if (active) return { stay: active, mode: 'active' as const, days: 0 };
+    const next = stays
+      .filter((stay) => stay.arrivalDate > today)
+      .sort((a, b) => a.arrivalDate.localeCompare(b.arrivalDate))[0];
+    return next ? { stay: next, mode: 'next' as const, days: daysUntil(today, next.arrivalDate) } : undefined;
+  }, [stays, today]);
 
   const yearStats = useMemo(() => {
     const parks = new Set(yearStarted.map((stay) => parkKey(stay, sites)));
@@ -110,15 +127,28 @@ export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, 
   function openChecklist(stay: Stay) { setSelectedStay(undefined); onChecklist(stay); }
   function openDashboard(stay: Stay) { setSelectedStay(undefined); onDashboard(stay); }
 
+  const heroLocation = heroTrip ? locationFor(heroTrip.stay, sites) : undefined;
+
   return (
     <section className="content-page passport-page">
       <div className="passport-hero">
-        <div>
+        <div className="passport-hero-copy">
           <p className="eyebrow">Your camping passport</p>
           <h2>Trips, memories, and what is next</h2>
           <p>One place for upcoming plans, completed stays, and the numbers behind your camping story.</p>
         </div>
-        <button className="primary-button" onClick={onAdd}><Plus size={18} /> Add trip</button>
+        <div className="passport-hero-actions">
+          {heroTrip && <button className={`passport-hero-trip ${heroTrip.mode}`} type="button" onClick={() => openDashboard(heroTrip.stay)}>
+            <span>{heroTrip.mode === 'active' ? <TentTree size={22} /> : <CalendarDays size={22} />}</span>
+            <span>
+              <small>{heroTrip.mode === 'active' ? 'Camping now' : 'Next trip'}</small>
+              <strong>{heroLocation?.park ?? 'Camping trip'}</strong>
+              <em>{heroTrip.mode === 'active' ? locationLine(heroTrip.stay, sites) || 'Trip in progress' : `${heroTrip.days === 0 ? 'Today' : `${heroTrip.days} ${heroTrip.days === 1 ? 'day' : 'days'} away`} · ${locationLine(heroTrip.stay, sites) || formatDateRange(heroTrip.stay.arrivalDate, heroTrip.stay.departureDate)}`}</em>
+            </span>
+            <ChevronRight size={18} />
+          </button>}
+          <button className="primary-button passport-hero-add" onClick={onAdd}><Plus size={18} /> Add trip</button>
+        </div>
       </div>
 
       <div className="passport-stat-layout">

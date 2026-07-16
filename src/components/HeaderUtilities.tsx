@@ -3,7 +3,6 @@ import { ChevronDown, ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from './AuthGate';
 import { AdminAccountsLauncher } from './AdminAccountsLauncher';
 import { DataMigrationLauncher } from './DataMigrationLauncher';
-import { HeaderTripStatus } from './HeaderTripStatus';
 
 export function HeaderUtilities() {
   const { user, openAccount } = useAuth();
@@ -26,7 +25,6 @@ export function HeaderUtilities() {
     <>
       {menuOpen && <button className="header-utility-scrim" type="button" aria-label="Close account menu" onClick={() => setMenuOpen(false)} />}
       <div className="header-utilities">
-        <HeaderTripStatus />
         <button
           className={menuOpen ? 'header-utility-trigger open' : 'header-utility-trigger'}
           type="button"
