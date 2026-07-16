@@ -31,6 +31,7 @@ import './mobile-overflow-fix.css';
 import './mobile-primary-nav.css';
 import './camper-maintenance.css';
 import './nav-maintenance-fix.css';
+import './header-nav-correction.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';
