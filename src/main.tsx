@@ -29,7 +29,6 @@ import './photo-coming-soon.css';
 import './header-cleanup.css';
 import './mobile-overflow-fix.css';
 import './mobile-primary-nav.css';
-import './unified-nav-wishlist.css';
 import './camper-maintenance.css';
 import './nav-maintenance-fix.css';
 import App from './App';
