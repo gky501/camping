@@ -34,6 +34,7 @@ import './nav-maintenance-fix.css';
 import './header-nav-correction.css';
 import './header-polish.css';
 import './passport-hero-trip.css';
+import './navigation-clean-reset.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';
