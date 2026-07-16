@@ -1,0 +1,59 @@
+/* Keep the shared six-item navigation inside the space between brand and header actions. */
+@media (min-width: 821px) {
+  .app-header-v2 {
+    grid-template-columns: minmax(150px, 205px) minmax(0, 1fr) auto !important;
+    gap: 12px;
+  }
+
+  .mobile-primary-nav {
+    position: static;
+    z-index: auto;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 40px;
+    padding: 4px;
+    border: 0;
+    border-radius: 15px;
+    background: #e8efe9;
+    box-shadow: none;
+  }
+
+  .mobile-primary-nav button {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 34px;
+    padding: 7px 5px;
+    gap: 5px;
+    border-radius: 11px;
+  }
+
+  .mobile-primary-nav button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: .69rem;
+  }
+
+  .mobile-primary-nav button svg { width: 15px; height: 15px; flex: 0 0 auto; }
+  .header-actions { min-width: max-content; }
+}
+
+@media (min-width: 821px) and (max-width: 1120px) {
+  .app-header-v2 { grid-template-columns: 64px minmax(0, 1fr) auto !important; }
+  .app-header-v2 .brand > span:last-child { display: none; }
+  .mobile-primary-nav button span { font-size: .62rem; }
+  .mobile-primary-nav button { gap: 3px; padding-inline: 3px; }
+  .app-header-v2 .sync-status { display: none; }
+}
+
+.wishlist-page .wishlist-add-stay {
+  background: #b67a22 !important;
+  color: #fff !important;
+  border-color: #b67a22 !important;
+  box-shadow: 0 8px 18px rgba(182, 122, 34, .22);
+}
+.wishlist-page .wishlist-add-stay:hover { background: #9e681c !important; }

@@ -1,0 +1,37 @@
+.camper-maintenance-section { display: grid; gap: 16px; padding: 20px; border: 1px solid rgba(48,78,59,.14); border-radius: 20px; background: #f7faf7; }
+.camper-maintenance-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.camper-maintenance-heading h3 { margin: 2px 0 3px; }
+.camper-maintenance-heading p { margin: 0; color: var(--muted); }
+.camper-use-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border-radius: 999px; background: #e7efe8; font-weight: 800; white-space: nowrap; }
+.camper-use-toggle input { accent-color: var(--forest); }
+.maintenance-paused { display: flex; gap: 12px; align-items: center; padding: 15px; border-radius: 15px; background: #edf1ee; }
+.maintenance-paused strong, .maintenance-paused span { display: block; }
+.maintenance-paused span { margin-top: 3px; color: var(--muted); font-size: .82rem; }
+.maintenance-add-form { display: grid; grid-template-columns: minmax(0,1fr) 170px auto; align-items: end; gap: 10px; }
+.maintenance-list { display: grid; gap: 12px; }
+.maintenance-card { display: grid; gap: 11px; padding: 15px; border: 1px solid rgba(48,78,59,.13); border-radius: 16px; background: white; }
+.maintenance-card.overdue, .maintenance-card.condition-attention { border-color: rgba(160,55,45,.35); }
+.maintenance-card.soon, .maintenance-card.condition-watch { border-color: rgba(182,122,34,.4); }
+.maintenance-card-top, .maintenance-meta, .maintenance-condition, .maintenance-actions { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.maintenance-card-top strong, .maintenance-card-top span { display: block; }
+.maintenance-card-top span { margin-top: 2px; color: var(--muted); font-size: .76rem; }
+.maintenance-meta { flex-wrap: wrap; color: var(--muted); font-size: .76rem; }
+.maintenance-meta > span { display: inline-flex; align-items: center; gap: 5px; }
+.maintenance-timing { padding: 5px 8px; border-radius: 999px; background: #edf3ee; color: var(--forest); font-weight: 800; }
+.maintenance-timing.overdue { background: #f8e8e5; color: #92372f; }
+.maintenance-timing.soon { background: #fff1d9; color: #8b5a16; }
+.maintenance-condition span { font-size: .76rem; font-weight: 800; }
+.maintenance-condition select { min-width: 155px; }
+.maintenance-actions { justify-content: flex-start; flex-wrap: wrap; }
+.maintenance-actions button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 10px; border: 1px solid rgba(48,78,59,.16); border-radius: 10px; background: #f4f7f4; color: var(--forest); font: inherit; font-size: .76rem; font-weight: 800; cursor: pointer; }
+.maintenance-warning { display: flex; align-items: center; gap: 7px; color: #8b5a16; font-size: .78rem; font-weight: 750; }
+.camper-use-status, .maintenance-alert-pill { display: inline-flex; width: max-content; padding: 6px 9px; border-radius: 999px; background: #ecefed; color: var(--muted); font-size: .7rem; font-weight: 850; }
+.camper-use-status.active { background: #e2f1e5; color: #275e3e; }
+.maintenance-alert-pill { background: #fff0d5; color: #875814; }
+.camper-card-inactive { opacity: .72; }
+@media (max-width: 700px) {
+  .camper-maintenance-heading { display: grid; }
+  .camper-use-toggle { width: max-content; }
+  .maintenance-add-form { grid-template-columns: 1fr; }
+  .maintenance-card-top, .maintenance-condition { align-items: flex-start; }
+}
