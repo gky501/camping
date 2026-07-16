@@ -41,7 +41,7 @@ export function SiteCard({ site, profile, stays, selected, actionLabel, onSelect
         {site.viewTypes.slice(0, 3).map((view) => <span className="chip" key={view}><Trees size={13} /> {view}</span>)}
         {totalStays > 0 && <span className="chip"><Moon size={13} /> {totalStays} {totalStays === 1 ? 'stay' : 'stays'}{totalNights ? ` · ${totalNights} nights` : ''}</span>}
       </div>
-      <button className="text-button" onClick={(event) => { event.stopPropagation(); onLogStay(); }}>{resolvedActionLabel}</button>
+      <button className={`text-button ${isWishlist && resolvedActionLabel === 'Add stay' ? 'wishlist-add-stay' : ''}`} onClick={(event) => { event.stopPropagation(); onLogStay(); }}>{resolvedActionLabel}</button>
     </article>
   );
 }
