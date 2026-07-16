@@ -29,6 +29,7 @@ import './photo-coming-soon.css';
 import './header-cleanup.css';
 import './mobile-overflow-fix.css';
 import './mobile-primary-nav.css';
+import './wishlist-refresh.css';
 import App from './App';
 import { AuthGate } from './components/AuthGate';
 import { HeaderUtilities } from './components/HeaderUtilities';
