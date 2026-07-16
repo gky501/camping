@@ -1,0 +1,107 @@
+.passport-hero-copy { min-width: 0; }
+
+.passport-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.passport-hero-trip {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  min-width: 260px;
+  max-width: 390px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 16px;
+  background: rgba(255,255,255,.13);
+  color: white;
+  box-shadow: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background .16s ease, transform .16s ease;
+}
+
+.passport-hero-trip:hover {
+  background: rgba(255,255,255,.2);
+  transform: translateY(-1px);
+}
+
+.passport-hero-trip.active {
+  border-color: rgba(247,205,122,.52);
+  background: rgba(187,126,35,.3);
+}
+
+.passport-hero-trip > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 13px;
+  background: rgba(255,255,255,.16);
+}
+
+.passport-hero-trip > span:nth-child(2) { min-width: 0; }
+.passport-hero-trip small,
+.passport-hero-trip strong,
+.passport-hero-trip em { display: block; }
+.passport-hero-trip small {
+  margin-bottom: 2px;
+  color: #f2cd85;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+.passport-hero-trip strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .96rem;
+}
+.passport-hero-trip em {
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255,255,255,.78);
+  font-size: .72rem;
+  font-style: normal;
+}
+.passport-hero-trip > svg { opacity: .72; }
+.passport-hero-add { flex: 0 0 auto; }
+
+@media (min-width: 821px) {
+  .app-header-v2 {
+    grid-template-columns: 200px minmax(520px, 860px) minmax(250px, auto) !important;
+  }
+  .header-actions { padding-right: 158px !important; }
+}
+
+@media (max-width: 1050px) {
+  .passport-hero {
+    align-items: flex-start;
+  }
+  .passport-hero-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  .passport-hero-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+  .passport-hero-trip {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+  .passport-hero-add { width: max-content; }
+}
