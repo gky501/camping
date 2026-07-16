@@ -1,24 +1,34 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Award,
   BadgeCheck,
+  BookOpen,
   CalendarRange,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
+  ClipboardCheck,
   Compass,
   Flame,
   MapPin,
   Moon,
+  Package,
   Route,
+  ShieldCheck,
   Sparkles,
   Star,
   TentTree,
   Trophy,
   Trees,
+  Truck,
+  Wrench,
   type LucideIcon,
 } from 'lucide-react';
 import { distanceMiles } from '../lib/geo';
-import type { Campsite, HomeBase, Stay } from '../types';
+import { loadCamperMaintenance, maintenanceTiming, type CamperMaintenanceMap } from '../lib/camperMaintenance';
+import type { AppState, Campsite, HomeBase, Stay } from '../types';
+
+const STORAGE_KEY = 'camp-ledger-state-v2-wishlist-only';
 
 interface CampingAchievementsProps {
   sites: Campsite[];
@@ -65,27 +75,50 @@ function longestYearStreak(years: number[]): number {
 function metricLabel(value: number, unit: string): string {
   if (unit === 'miles') return `${Math.round(value).toLocaleString()} miles`;
   if (unit === 'year streak') return `${value} ${value === 1 ? 'year' : 'years'} in a row`;
+  if (unit === 'ready status') return value ? 'Ready' : 'Not ready';
   return `${value.toLocaleString()} ${unit}`;
+}
+
+function readTrackedState(): Partial<AppState> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) as AppState : {};
+  } catch {
+    return {};
+  }
 }
 
 export function CampingAchievements({ sites, stays, homeBase }: CampingAchievementsProps) {
   const [showAllBadges, setShowAllBadges] = useState(false);
+  const [maintenance, setMaintenance] = useState<CamperMaintenanceMap>({});
   const today = new Date().toISOString().slice(0, 10);
   const completed = useMemo(() => stays.filter((stay) => stay.departureDate <= today), [stays, today]);
 
+  useEffect(() => {
+    loadCamperMaintenance().then(setMaintenance).catch(() => setMaintenance({}));
+  }, []);
+
   const analytics = useMemo(() => {
+    const tracked = readTrackedState();
     const parks = new Map<string, { label: string; trips: number; nights: number }>();
     const states = new Set<string>();
     const seasons = new Set<string>();
     const years = new Map<number, number>();
+    const camperTrips = new Map<string, number>();
     let totalNights = 0;
     let weekendTrips = 0;
     let longestTrip = 0;
     let farthestMiles = 0;
+    let journalEntries = 0;
+    let ratedTrips = 0;
 
     for (const stay of completed) {
       totalNights += stay.nights;
       longestTrip = Math.max(longestTrip, stay.nights);
+      if (stay.journal.trim()) journalEntries += 1;
+      if (Object.keys(stay.observations ?? {}).length > 0) ratedTrips += 1;
+      if (stay.camperId) camperTrips.set(stay.camperId, (camperTrips.get(stay.camperId) ?? 0) + 1);
+
       const arrival = new Date(`${stay.arrivalDate}T12:00:00`);
       if (!Number.isNaN(arrival.getTime())) {
         if (arrival.getDay() === 5 || arrival.getDay() === 6) weekendTrips += 1;
@@ -105,6 +138,28 @@ export function CampingAchievements({ sites, stays, homeBase }: CampingAchieveme
         farthestMiles = Math.max(farthestMiles, distanceMiles(homeBase, location));
       }
     }
+
+    const templateItemCount = (tracked.checklistTemplate?.sections ?? []).reduce((sum, section) => sum + section.items.length, 0);
+    const completedChecklistCount = (tracked.tripChecklists ?? []).filter((checklist) => {
+      const stay = completed.find((item) => item.id === checklist.stayId);
+      if (!stay) return false;
+      const customCount = checklist.customSections.reduce((sum, section) => sum + section.items.length, 0);
+      const total = templateItemCount + customCount;
+      return total > 0 && checklist.checkedItemIds.length >= total;
+    }).length;
+
+    const equipmentLogs = (tracked.equipmentInventory?.items ?? []).flatMap((item) => item.log ?? []);
+    const equipmentServiceCount = equipmentLogs.filter((entry) => ['serviced', 'repaired', 'cleaned', 'inspected'].includes(entry.action)).length;
+    const equipmentReplacementCount = equipmentLogs.filter((entry) => entry.action === 'replaced').length;
+    const equipmentReady = (tracked.equipmentInventory?.items?.length ?? 0) > 0
+      && (tracked.equipmentInventory?.items ?? []).every((item) => item.condition !== 'replace');
+
+    const activeMaintenance = Object.values(maintenance).filter((record) => record.active);
+    const maintenanceReminders = activeMaintenance.flatMap((record) => record.maintenance);
+    const maintenanceActions = maintenanceReminders.filter((reminder) => Boolean(reminder.lastCompletedDate)).length;
+    const scheduledMaintenance = maintenanceReminders.filter((reminder) => Boolean(reminder.lastCompletedDate));
+    const maintenanceReady = scheduledMaintenance.length > 0
+      && scheduledMaintenance.every((reminder) => maintenanceTiming(reminder) !== 'overdue' && reminder.condition !== 'attention');
 
     const yearlyTrips = [...years.entries()].sort((a, b) => a[0] - b[0]).slice(-8).map(([year, trips]) => ({ year, trips }));
     const topParks = [...parks.values()].sort((a, b) => b.trips - a.trips || b.nights - a.nights).slice(0, 5);
@@ -132,8 +187,18 @@ export function CampingAchievements({ sites, stays, homeBase }: CampingAchieveme
       yearlyTrips,
       topParks,
       tripLengths,
+      journalEntries,
+      ratedTrips,
+      distinctCampers: camperTrips.size,
+      mostUsedCamperTrips: Math.max(...camperTrips.values(), 0),
+      completedChecklistCount,
+      equipmentServiceCount,
+      equipmentReplacementCount,
+      equipmentReady: Number(equipmentReady),
+      maintenanceActions,
+      maintenanceReady: Number(maintenanceReady),
     };
-  }, [completed, homeBase, sites]);
+  }, [completed, homeBase, maintenance, sites]);
 
   const achievements: Achievement[] = [
     { id: 'first-stamp', title: 'First Stamp', description: 'Complete your first camping trip.', current: analytics.tripCount, target: 1, unit: 'trips', icon: BadgeCheck },
@@ -150,6 +215,17 @@ export function CampingAchievements({ sites, stays, homeBase }: CampingAchieveme
     { id: 'four-seasons', title: 'Four-Season Camper', description: 'Camp during winter, spring, summer, and fall.', current: analytics.seasonCount, target: 4, unit: 'seasons', icon: Award },
     { id: 'long-haul', title: 'Long Haul', description: `Camp at least 250 miles from ${homeBase.name}.`, current: Math.round(analytics.farthestMiles), target: 250, unit: 'miles', icon: MapPin },
     { id: 'year-after-year', title: 'Year After Year', description: 'Complete trips in three consecutive years.', current: analytics.yearStreak, target: 3, unit: 'year streak', icon: CalendarRange },
+    { id: 'ready-to-roll', title: 'Ready to Roll', description: 'Complete every item on a trip checklist.', current: analytics.completedChecklistCount, target: 1, unit: 'completed checklists', icon: ClipboardCheck },
+    { id: 'checklist-champion', title: 'Checklist Champion', description: 'Finish ten complete trip checklists.', current: analytics.completedChecklistCount, target: 10, unit: 'completed checklists', icon: CheckCircle2 },
+    { id: 'gear-keeper', title: 'Gear Keeper', description: 'Log five equipment service, repair, cleaning, or inspection activities.', current: analytics.equipmentServiceCount, target: 5, unit: 'gear activities', icon: Package },
+    { id: 'fresh-start', title: 'Fresh Start', description: 'Record your first equipment replacement.', current: analytics.equipmentReplacementCount, target: 1, unit: 'replacements', icon: Sparkles },
+    { id: 'packed-and-ready', title: 'Packed & Ready', description: 'Keep every tracked equipment item out of Needs replaced status.', current: analytics.equipmentReady, target: 1, unit: 'ready status', icon: ShieldCheck },
+    { id: 'maintenance-minder', title: 'Maintenance Minder', description: 'Complete five camper maintenance reminders.', current: analytics.maintenanceActions, target: 5, unit: 'maintenance actions', icon: Wrench },
+    { id: 'road-ready', title: 'Road Ready', description: 'Have active scheduled camper maintenance current with nothing overdue or needing attention.', current: analytics.maintenanceReady, target: 1, unit: 'ready status', icon: ShieldCheck },
+    { id: 'camper-explorer', title: 'Camper Explorer', description: 'Complete trips using two different campers or setups.', current: analytics.distinctCampers, target: 2, unit: 'campers', icon: Truck },
+    { id: 'camper-loyalist', title: 'Camper Loyalist', description: 'Complete ten trips with the same camper.', current: analytics.mostUsedCamperTrips, target: 10, unit: 'trips', icon: Truck },
+    { id: 'story-keeper', title: 'Story Keeper', description: 'Write journal notes for ten completed trips.', current: analytics.journalEntries, target: 10, unit: 'journal entries', icon: BookOpen },
+    { id: 'site-scout', title: 'Site Scout', description: 'Record campsite observations on ten completed trips.', current: analytics.ratedTrips, target: 10, unit: 'rated trips', icon: Compass },
   ];
 
   const scoredAchievements = achievements.map((achievement) => ({
@@ -168,7 +244,7 @@ export function CampingAchievements({ sites, stays, homeBase }: CampingAchieveme
 
   return (
     <>
-      <div className="stats-section-heading achievement-section-heading"><div><p className="eyebrow">Automatically earned from completed trips</p><h3>Camping achievements</h3></div></div>
+      <div className="stats-section-heading achievement-section-heading"><div><p className="eyebrow">Automatically earned from your Camp Ledger activity</p><h3>Camping achievements</h3></div></div>
       <div className="achievement-summary-grid">
         <article><span><Trophy /></span><div><strong>{earnedCount} of {scoredAchievements.length}</strong><small>badges earned</small></div></article>
         <article><span><Sparkles /></span><div><strong>{completion}%</strong><small>achievement collection complete</small></div></article>
