@@ -85,6 +85,7 @@ export function TripDashboardModal({
   onSaveDetail,
   onChecklist,
   onEdit,
+  onDelete,
   onClose,
 }: {
   stay: Stay;
@@ -95,6 +96,7 @@ export function TripDashboardModal({
   onSaveDetail: (detail: TripDetail) => void;
   onChecklist: () => void;
   onEdit: () => void;
+  onDelete: () => void;
   onClose: () => void;
 }) {
   const location = stay.siteSnapshot ?? site;
@@ -287,6 +289,7 @@ export function TripDashboardModal({
         </section>
 
         <div className="modal-actions trip-dashboard-actions">
+          <button type="button" className="danger-button" onClick={onDelete}><Trash2 size={16} /> Delete trip</button>
           <button type="button" className="secondary-button" onClick={onEdit}><Pencil size={16} /> Edit trip</button>
           <span className="modal-action-spacer" />
           <button type="button" className="secondary-button" onClick={onChecklist}><ClipboardCheck size={16} /> Open checklist</button>
