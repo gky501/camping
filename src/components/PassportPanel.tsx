@@ -212,7 +212,8 @@ export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, 
           {upcoming.map((stay) => {
             const location = locationFor(stay, sites);
             const camper = campers.find((item) => item.id === stay.camperId);
-            return <article className="upcoming-trip-card" key={stay.id}>
+            const season = seasonForDate(stay.arrivalDate);
+            return <article className={`upcoming-trip-card season-${season}`} key={stay.id}>
               <div className="upcoming-trip-date"><CalendarDays /><strong>{formatDateRange(stay.arrivalDate, stay.departureDate)}</strong><TripStatusPill stay={stay} /></div>
               <div className="upcoming-trip-title"><span><TentTree /></span><div><h4>{location?.park ?? 'Camping trip'}</h4><p><MapPin size={14} /> {locationLine(stay, sites) || location?.state || 'Location details pending'}</p></div></div>
               <TripMetaPills stay={stay} camper={camper} />
