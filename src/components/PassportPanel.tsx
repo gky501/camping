@@ -46,6 +46,15 @@ function daysUntil(from: string, to: string): number {
   return Math.max(0, Math.round((end - start) / 86_400_000));
 }
 
+function dateBadge(dateValue: string): { month: string; day: string } {
+  const date = new Date(`${dateValue}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return { month: 'Trip', day: '--' };
+  return {
+    month: date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase(),
+    day: String(date.getDate()),
+  };
+}
+
 export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, onChecklist, onDashboard, onOpenRecap }: {
   sites: Campsite[];
   stays: Stay[];
@@ -121,6 +130,14 @@ export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, 
 
   const maxMonth = Math.max(...yearStats.monthly, 1);
   const visibleCompleted = completed.slice(0, completedVisible);
+  const completedByYear = useMemo(() => {
+    const groups = new Map<string, Stay[]>();
+    for (const stay of visibleCompleted) {
+      const stayYear = stay.arrivalDate.slice(0, 4);
+      groups.set(stayYear, [...(groups.get(stayYear) ?? []), stay]);
+    }
+    return [...groups.entries()];
+  }, [visibleCompleted]);
 
   function editStay(stay: Stay) { setSelectedStay(undefined); onEdit(stay); }
   function deleteStay(stay: Stay) { setSelectedStay(undefined); onDelete(stay); }
@@ -201,19 +218,28 @@ export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, 
       </section>
 
       <section className="passport-section completed-passport-section">
-        <div className="passport-section-heading"><div><p className="eyebrow">Stamped and remembered</p><h3>Completed trips</h3></div><span>{completed.length}</span></div>
-        {visibleCompleted.length ? <div className="passport-history-grid">
-          {visibleCompleted.map((stay) => {
-            const location = locationFor(stay, sites);
-            return <button className="passport-history-card" key={stay.id} onClick={() => setSelectedStay(stay)}>
-              <span className="passport-stamp"><BookOpen /><small>{stay.arrivalDate.slice(0, 4)}</small></span>
-              <span className="passport-history-copy"><small>{formatDateRange(stay.arrivalDate, stay.departureDate)}</small><strong>{location?.park ?? 'Unknown campsite'}</strong><em>{locationLine(stay, sites) || location?.state || 'Location details unavailable'}</em></span>
-              <span className="passport-night-count"><Moon size={15} /> {stay.nights}</span>
-              <ChevronRight className="passport-history-chevron" />
-            </button>;
-          })}
+        <div className="passport-section-heading completed-heading">
+          <div><p className="eyebrow">Stamped and remembered</p><h3>Completed trips</h3><p className="passport-section-intro">A chronological log of the places you have camped.</p></div>
+          <span aria-label={`${completed.length} completed trips`}><strong>{completed.length}</strong><small>trips</small></span>
+        </div>
+        {visibleCompleted.length ? <div className="passport-history-years">
+          {completedByYear.map(([stayYear, yearTrips]) => <section className="passport-history-year" key={stayYear} aria-labelledby={`completed-${stayYear}`}>
+            <div className="passport-year-divider"><h4 id={`completed-${stayYear}`}>{stayYear}</h4><span>{yearTrips.length} {yearTrips.length === 1 ? 'trip' : 'trips'} shown</span></div>
+            <div className="passport-history-grid">
+              {yearTrips.map((stay) => {
+                const location = locationFor(stay, sites);
+                const badge = dateBadge(stay.arrivalDate);
+                return <button className="passport-history-card" key={stay.id} onClick={() => setSelectedStay(stay)} aria-label={`Open ${location?.park ?? 'camping trip'}, ${formatDateRange(stay.arrivalDate, stay.departureDate)}`}>
+                  <span className="passport-date-badge"><small>{badge.month}</small><strong>{badge.day}</strong></span>
+                  <span className="passport-history-copy"><small>{formatDateRange(stay.arrivalDate, stay.departureDate)}</small><strong>{location?.park ?? 'Unknown campsite'}</strong><em><MapPin size={13} /> {locationLine(stay, sites) || location?.state || 'Location details unavailable'}</em></span>
+                  <span className="passport-night-count"><Moon size={15} /><strong>{stay.nights}</strong><small>{stay.nights === 1 ? 'night' : 'nights'}</small></span>
+                  <ChevronRight className="passport-history-chevron" />
+                </button>;
+              })}
+            </div>
+          </section>)}
         </div> : <div className="passport-empty-card"><BookOpen /><div><strong>Your first passport stamp is waiting</strong><p>Completed trips will collect here without one endless timeline.</p></div></div>}
-        {completedVisible < completed.length && <button className="secondary-button passport-show-more" onClick={() => setCompletedVisible((count) => count + 8)}>Show 8 more trips</button>}
+        {completedVisible < completed.length && <button className="secondary-button passport-show-more" onClick={() => setCompletedVisible((count) => count + 8)}><span>Show more trips</span><small>{completed.length - completedVisible} remaining</small></button>}
       </section>
 
       {selectedStay && <StayDetailModal stay={selectedStay} site={sites.find((site) => site.id === selectedStay.siteId)} camper={campers.find((camper) => camper.id === selectedStay.camperId)} onDashboard={() => openDashboard(selectedStay)} onChecklist={() => openChecklist(selectedStay)} onEdit={() => editStay(selectedStay)} onDelete={() => deleteStay(selectedStay)} onClose={() => setSelectedStay(undefined)} />}
