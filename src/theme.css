@@ -155,6 +155,39 @@
   border-color: #40584b;
 }
 
+:root[data-theme='dark'] .more-menu-backdrop {
+  background: rgba(5, 15, 10, .62);
+}
+
+:root[data-theme='dark'] .more-menu-card {
+  background: rgba(27, 42, 35, .99);
+  color: #e8f0eb;
+  border-color: #40584b;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .42);
+}
+
+:root[data-theme='dark'] .more-menu-card > button:not(.icon-button) {
+  color: #dbe7e0;
+}
+
+:root[data-theme='dark'] :where(.more-menu-card > button:not(.icon-button):hover, .more-menu-card > button.active) {
+  background: #263b31;
+}
+
+:root[data-theme='dark'] .more-menu-card > button:not(.icon-button) > span {
+  background: #294236;
+  color: #a9d8bf;
+}
+
+:root[data-theme='dark'] .more-menu-card > button.active > span {
+  background: #39785d;
+  color: #f4faf6;
+}
+
+:root[data-theme='dark'] .more-menu-card > button small {
+  color: #9fb0a6;
+}
+
 :root[data-theme='dark'] :where(.header-utility-avatar, .header-utility-menu-heading > span) {
   background: #315c49;
   color: #eef7f2;

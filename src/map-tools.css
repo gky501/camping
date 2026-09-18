@@ -15,6 +15,12 @@
 .map-tool-stack svg { width: 19px; height: 19px; }
 .map-popup-actions a { text-decoration: none; }
 .map-popup-actions .secondary-button.small { padding: 8px 12px; font-size: .85rem; }
+.map-edit-location-button { width: auto; }
+.map-location-editor { width: min(720px, 100%); }
+.map-location-editor .modal-header p:last-child { margin: 5px 0 0; color: var(--muted); font-size: .82rem; }
+.map-location-editor-body { display: grid; gap: 12px; padding: 20px; }
+.map-location-editor-body .site-location-picker-map { height: min(52vh, 430px); }
+.map-location-editor-body .coordinate-line { margin: 0; }
 
 @media (max-width: 820px) {
   .advanced-map-filters { grid-template-columns: 1fr 1fr; }

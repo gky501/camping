@@ -79,6 +79,15 @@ export default function App() {
   function closeStayModal() { setShowStayModal(false); setStaySite(undefined); setEditingStay(undefined); }
   function selectSite(site: Campsite) { setSelectedSiteId(site.id); }
   function selectSiteOnMap(site: Campsite) { selectSite(site); openPlace('map'); }
+  async function updateSiteLocation(site: Campsite) {
+    if (!state) return;
+    if (mode === 'cloud') await saveSiteRemote(site);
+    const stays = state.stays.map((stay) => stay.siteId === site.id && stay.siteSnapshot
+      ? { ...stay, siteSnapshot: { ...stay.siteSnapshot, latitude: site.latitude, longitude: site.longitude } }
+      : stay);
+    setState({ ...state, sites: state.sites.map((item) => item.id === site.id ? site : item), stays });
+    setSelectedSiteId(site.id);
+  }
   function openChecklistForStay(stay: Stay) { setDashboardStay(undefined); setChecklistStayId(stay.id); openTab('checklist'); }
   function openDashboardForStay(stay: Stay) { setDashboardStay(stay); }
 
@@ -296,7 +305,7 @@ export default function App() {
             <button className={placeView === 'parks' ? 'active' : ''} onClick={() => setPlaceView('parks')}><Trees size={17} /> Parks</button>
             <button className={placeView === 'sites' ? 'active' : ''} onClick={() => setPlaceView('sites')}><TentTree size={17} /> Campsites</button>
           </nav>
-          {placeView === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} />}
+          {placeView === 'map' && <MapPanel sites={state.sites} stays={state.stays} profile={activeProfile} selectedSiteId={selectedSiteId} onSelectSite={selectSite} onLogStay={openStay} onUpdateSite={updateSiteLocation} />}
           {placeView === 'parks' && <ParksPanel parks={state.parks ?? []} sites={state.sites} stays={state.stays} profile={activeProfile} onEdit={setParkToEdit} onSelectSite={selectSiteOnMap} onLogStay={openStay} />}
           {placeView === 'sites' && <CampsitesPanel sites={state.sites} stays={state.stays} profile={activeProfile} onSelect={selectSiteOnMap} onLogStay={openStay} />}
         </>}
