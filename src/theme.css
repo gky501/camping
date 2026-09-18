@@ -28,16 +28,45 @@
   box-shadow: 0 10px 28px rgba(0, 0, 0, .2) !important;
 }
 
-:root[data-theme='dark'] .mobile-primary-nav button { color: #aebfb5; }
-:root[data-theme='dark'] .mobile-primary-nav button:hover { background: #24382e; color: #e8f0eb; }
-:root[data-theme='dark'] .mobile-primary-nav button.active { background: #315c49; color: #f4faf6; box-shadow: inset 0 0 0 1px rgba(189, 226, 205, .13); }
+:root[data-theme='dark'] .mobile-primary-nav button {
+  color: #aebfb5;
+}
 
-:root[data-theme='dark'] :where(.desktop-nav, .secondary-button, .icon-button, .theme-choice, .auth-method-toggle, .checklist-mode-switch) { background: #25372e; }
+:root[data-theme='dark'] .mobile-primary-nav button:hover {
+  background: #24382e;
+  color: #e8f0eb;
+}
 
-:root[data-theme='dark'] .places-subnav { background: rgba(27, 42, 35, .97); border-color: #3b5246; box-shadow: 0 10px 28px rgba(0, 0, 0, .22); }
-:root[data-theme='dark'] .places-subnav button { color: #aebfb5; }
-:root[data-theme='dark'] .places-subnav button:hover { background: #263b31; color: #eef5f1; }
-:root[data-theme='dark'] .places-subnav button.active { background: #315c49; color: #f4faf6; box-shadow: inset 0 0 0 1px rgba(189, 226, 205, .13); }
+:root[data-theme='dark'] .mobile-primary-nav button.active {
+  background: #315c49;
+  color: #f4faf6;
+  box-shadow: inset 0 0 0 1px rgba(189, 226, 205, .13);
+}
+
+:root[data-theme='dark'] :where(.desktop-nav, .secondary-button, .icon-button, .theme-choice, .auth-method-toggle, .checklist-mode-switch) {
+  background: #25372e;
+}
+
+:root[data-theme='dark'] .places-subnav {
+  background: rgba(27, 42, 35, .97);
+  border-color: #3b5246;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .22);
+}
+
+:root[data-theme='dark'] .places-subnav button {
+  color: #aebfb5;
+}
+
+:root[data-theme='dark'] .places-subnav button:hover {
+  background: #263b31;
+  color: #eef5f1;
+}
+
+:root[data-theme='dark'] .places-subnav button.active {
+  background: #315c49;
+  color: #f4faf6;
+  box-shadow: inset 0 0 0 1px rgba(189, 226, 205, .13);
+}
 
 :root[data-theme='dark'] :where(
   .map-sidebar, .filter-panel, .site-card, .summary-card, .empty-state, .timeline-card, .settings-card,
@@ -51,63 +80,325 @@
   .trip-dashboard-card, .trip-camper-card, .trip-gate-row, .trip-photo-empty, .trip-photo-grid,
   .wishlist-card-menu, .maintenance-card, .camper-maintenance-section, .advanced-map-filters,
   .map-filter-toggle, .map-filter-check, .planned-trip-callout, .future-return-placeholder
-) { background: #1b2923; color: #e8f0eb; border-color: var(--line); box-shadow: 0 12px 32px rgba(0, 0, 0, .2); }
+) {
+  background: #1b2923;
+  color: #e8f0eb;
+  border-color: var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
+}
 
-:root[data-theme='dark'] .park-card-stats span { background: #25372e; color: #aebfb5; }
-:root[data-theme='dark'] :where(.park-card-stats strong, .park-card-times strong, .park-card-heading h3, .park-site-copy strong) { color: #e8f0eb; }
-:root[data-theme='dark'] :where(.park-card-note, .park-notes-block p, .park-site-copy p) { color: #9fb0a6; }
-:root[data-theme='dark'] .park-card-times span { background: #18261f; border-color: #385044; }
-:root[data-theme='dark'] :where(.modal-header, .modal-actions) { background: rgba(27, 41, 35, .96); }
+:root[data-theme='dark'] .park-card-stats span {
+  background: #25372e;
+  color: #aebfb5;
+}
 
-:root[data-theme='dark'] :where(input, select, textarea, .search-field, .choice, .month-weight, .weight-row output, .observation-row select, .checklist-trip-toolbar, .equipment-condition-field, .equipment-month-input, .stay-rating-grid) { background-color: #132019; color: #e8f0eb; border-color: #3b5045; }
-:root[data-theme='dark'] input::placeholder, :root[data-theme='dark'] textarea::placeholder { color: #7f9287; }
+:root[data-theme='dark'] :where(
+  .park-card-stats strong,
+  .park-card-times strong,
+  .park-card-heading h3,
+  .park-site-copy strong
+) {
+  color: #e8f0eb;
+}
+
+:root[data-theme='dark'] :where(.park-card-note, .park-notes-block p, .park-site-copy p) {
+  color: #9fb0a6;
+}
+
+:root[data-theme='dark'] .park-card-times span {
+  background: #18261f;
+  border-color: #385044;
+}
+
+:root[data-theme='dark'] :where(.modal-header, .modal-actions) {
+  background: rgba(27, 41, 35, .96);
+}
+
+:root[data-theme='dark'] :where(
+  input, select, textarea, .search-field, .choice, .month-weight, .weight-row output,
+  .observation-row select, .checklist-trip-toolbar, .equipment-condition-field,
+  .equipment-month-input, .stay-rating-grid
+) {
+  background-color: #132019;
+  color: #e8f0eb;
+  border-color: #3b5045;
+}
+
+:root[data-theme='dark'] input::placeholder,
+:root[data-theme='dark'] textarea::placeholder { color: #7f9287; }
+
 :root[data-theme='dark'] :where(.nav-button, .mobile-nav button, .mobile-primary-nav button) { color: #a4b3aa; }
-:root[data-theme='dark'] :where(.nav-button.active, .theme-choice button.active, .auth-method-toggle button.active) { background: #344a3e; color: #f2f7f4; }
+:root[data-theme='dark'] :where(.nav-button.active, .theme-choice button.active, .auth-method-toggle button.active) {
+  background: #344a3e;
+  color: #f2f7f4;
+}
 
-:root[data-theme='dark'] :where(.primary-button, .passport-hero .primary-button) { background: #3f896b; color: #f8fcfa; border-color: #64aa8c; }
-:root[data-theme='dark'] :where(.primary-button, .passport-hero .primary-button):hover { background: #4b9878; }
-:root[data-theme='dark'] .secondary-button { background: #263b31; color: #deebe3; border-color: #456253; }
+:root[data-theme='dark'] :where(.primary-button, .passport-hero .primary-button) {
+  background: #3f896b;
+  color: #f8fcfa;
+  border-color: #64aa8c;
+}
 
-:root[data-theme='dark'] :where(.header-utility-trigger, .header-utility-menu) { background: rgba(27, 42, 35, .98); color: #e8f0eb; border-color: #40584b; }
-:root[data-theme='dark'] :where(.header-utility-avatar, .header-utility-menu-heading > span) { background: #315c49; color: #eef7f2; }
-:root[data-theme='dark'] :where(.header-utility-account-row, .header-utility-menu .data-launch-button, .header-utility-menu .admin-accounts-launcher) { color: #e8f0eb; }
-:root[data-theme='dark'] :where(.header-utility-account-row:hover, .header-utility-menu .data-launch-button:hover, .header-utility-menu .admin-accounts-launcher:hover) { background: #263b31; }
+:root[data-theme='dark'] :where(.primary-button, .passport-hero .primary-button):hover {
+  background: #4b9878;
+}
 
-:root[data-theme='dark'] :where(.chip, .meta-pill, .trip-status-pill, .night-summary, .passport-section-heading > span) { background: #2b4035; color: #d8eadf; }
-:root[data-theme='dark'] .passport-history-card { background: linear-gradient(105deg, color-mix(in srgb, var(--trip-color) 23%, #17231e), #1b2923 52%); color: #e8f0eb; }
-:root[data-theme='dark'] .upcoming-trip-card { background: linear-gradient(155deg, color-mix(in srgb, var(--trip-color) 18%, #17231e), #1b2923 58%); }
+:root[data-theme='dark'] .secondary-button {
+  background: #263b31;
+  color: #deebe3;
+  border-color: #456253;
+}
+
+:root[data-theme='dark'] :where(.header-utility-trigger, .header-utility-menu) {
+  background: rgba(27, 42, 35, .98);
+  color: #e8f0eb;
+  border-color: #40584b;
+}
+
+:root[data-theme='dark'] :where(.header-utility-avatar, .header-utility-menu-heading > span) {
+  background: #315c49;
+  color: #eef7f2;
+}
+
+:root[data-theme='dark'] :where(
+  .header-utility-account-row,
+  .header-utility-menu .data-launch-button,
+  .header-utility-menu .admin-accounts-launcher
+) {
+  color: #e8f0eb;
+}
+
+:root[data-theme='dark'] :where(
+  .header-utility-account-row:hover,
+  .header-utility-menu .data-launch-button:hover,
+  .header-utility-menu .admin-accounts-launcher:hover
+) {
+  background: #263b31;
+}
+
+:root[data-theme='dark'] :where(.chip, .meta-pill, .trip-status-pill, .night-summary, .passport-section-heading > span) {
+  background: #2b4035;
+  color: #d8eadf;
+}
+
+:root[data-theme='dark'] .passport-history-card {
+  background: linear-gradient(105deg, color-mix(in srgb, var(--trip-color) 23%, #17231e), #1b2923 52%);
+  color: #e8f0eb;
+}
+
+:root[data-theme='dark'] .upcoming-trip-card {
+  background: linear-gradient(155deg, color-mix(in srgb, var(--trip-color) 18%, #17231e), #1b2923 58%);
+}
+
 :root[data-theme='dark'] .passport-history-card.season-winter { --trip-color: #82b4d2; --trip-wash: #203442; }
 :root[data-theme='dark'] .passport-history-card.season-spring { --trip-color: #a5c774; --trip-wash: #2c3824; }
 :root[data-theme='dark'] .passport-history-card.season-summer { --trip-color: #72c6ad; --trip-wash: #203a32; }
 :root[data-theme='dark'] .passport-history-card.season-autumn { --trip-color: #e0a061; --trip-wash: #44301f; }
-:root[data-theme='dark'] .passport-date-badge { background: color-mix(in srgb, var(--trip-color) 19%, #132019); }
-:root[data-theme='dark'] .upcoming-trip-title > span { background: color-mix(in srgb, var(--trip-color) 58%, #183026); color: #f5faf7; }
+:root[data-theme='dark'] .passport-date-badge {
+  background: color-mix(in srgb, var(--trip-color) 19%, #132019);
+}
+
+:root[data-theme='dark'] .upcoming-trip-title > span {
+  background: color-mix(in srgb, var(--trip-color) 58%, #183026);
+  color: #f5faf7;
+}
 
 /* Recap and achievements */
-:root[data-theme='dark'] .achievement-summary-grid article { background: linear-gradient(145deg, #21342a, #1a2922); border-color: #3a5145; }
-:root[data-theme='dark'] :where(.achievement-summary-grid article > span, .record-icon, .park-rank-number) { background: #294236; color: #9fd2b8; }
-:root[data-theme='dark'] .achievement-summary-grid strong { color: #eef5f1; }
-:root[data-theme='dark'] .achievement-card { background: #192720; color: #b6c4bc; border-color: #344a3e; }
-:root[data-theme='dark'] .achievement-card.earned { background: linear-gradient(150deg, #20372c, #1a2922); border-color: #47705a; box-shadow: 0 10px 26px rgba(0, 0, 0, .18); }
-:root[data-theme='dark'] .achievement-icon { background: #293930; color: #91a59a; }
-:root[data-theme='dark'] .achievement-card.earned .achievement-icon { background: #39785d; color: #f4faf6; }
-:root[data-theme='dark'] :where(.achievement-card h4, .achievement-card.earned h4) { color: #e8f0eb; }
-:root[data-theme='dark'] .achievement-card.earned .achievement-status { color: #8ed4ad; }
-:root[data-theme='dark'] .achievement-card > small { color: #9dafa4; }
-:root[data-theme='dark'] :where(.achievement-progress, .year-trip-chart span, .month-bar-column > div, .weekday-track, .compact-horizontal-row > div, .park-rank-copy > div) { background: #2a3c33; }
-:root[data-theme='dark'] .lifetime-strip { background: #3a5045; border-color: #3a5045; }
-:root[data-theme='dark'] .lifetime-strip > div { background: #1d2d25; }
-:root[data-theme='dark'] :where(.lifetime-strip strong, .record-card strong, .year-trip-chart strong, .month-bar-column > span, .weekday-name, .compact-horizontal-row > strong, .park-rank-copy > strong) { color: #e8f0eb; }
-:root[data-theme='dark'] :where(.record-card p, .weekday-legend span, .compact-horizontal-row > span) { color: #9fb0a6; }
+:root[data-theme='dark'] .achievement-summary-grid article {
+  background: linear-gradient(145deg, #21342a, #1a2922);
+  border-color: #3a5145;
+}
+
+:root[data-theme='dark'] :where(.achievement-summary-grid article > span, .record-icon, .park-rank-number) {
+  background: #294236;
+  color: #9fd2b8;
+}
+
+:root[data-theme='dark'] .achievement-summary-grid strong {
+  color: #eef5f1;
+}
+
+:root[data-theme='dark'] .achievement-card {
+  background: #192720;
+  color: #b6c4bc;
+  border-color: #344a3e;
+}
+
+:root[data-theme='dark'] .achievement-card.earned {
+  background: linear-gradient(150deg, #20372c, #1a2922);
+  border-color: #47705a;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .18);
+}
+
+:root[data-theme='dark'] .achievement-icon {
+  background: #293930;
+  color: #91a59a;
+}
+
+:root[data-theme='dark'] .achievement-card.earned .achievement-icon {
+  background: #39785d;
+  color: #f4faf6;
+}
+
+:root[data-theme='dark'] :where(.achievement-card h4, .achievement-card.earned h4) {
+  color: #e8f0eb;
+}
+
+:root[data-theme='dark'] .achievement-card.earned .achievement-status {
+  color: #8ed4ad;
+}
+
+:root[data-theme='dark'] .achievement-card > small {
+  color: #9dafA4;
+}
+
+:root[data-theme='dark'] :where(
+  .achievement-progress,
+  .year-trip-chart span,
+  .month-bar-column > div,
+  .weekday-track,
+  .compact-horizontal-row > div,
+  .park-rank-copy > div
+) {
+  background: #2a3c33;
+}
+
+:root[data-theme='dark'] .lifetime-strip {
+  background: #3a5045;
+  border-color: #3a5045;
+}
+
+:root[data-theme='dark'] .lifetime-strip > div {
+  background: #1d2d25;
+}
+
+:root[data-theme='dark'] :where(
+  .lifetime-strip strong,
+  .record-card strong,
+  .year-trip-chart strong,
+  .month-bar-column > span,
+  .weekday-name,
+  .compact-horizontal-row > strong,
+  .park-rank-copy > strong
+) {
+  color: #e8f0eb;
+}
+
+:root[data-theme='dark'] :where(.record-card p, .weekday-legend span, .compact-horizontal-row > span) {
+  color: #9fb0a6;
+}
+
+/* Checklists and equipment */
+:root[data-theme='dark'] :where(.checklist-progress-card, .checklist-template-banner, .equipment-manager-banner) {
+  background: linear-gradient(135deg, #20352b, #192720);
+  border-color: #426353;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+}
+
+:root[data-theme='dark'] :where(.checklist-progress-icon, .equipment-manager-icon) {
+  background: #29483a;
+  color: #9fd2b8;
+}
+
+:root[data-theme='dark'] :where(
+  .checklist-progress-copy strong,
+  .checklist-template-banner strong,
+  .equipment-manager-copy strong,
+  .equipment-name-line strong
+) {
+  color: #eef5f1;
+}
+
+:root[data-theme='dark'] :where(
+  .checklist-template-banner span,
+  .equipment-manager-copy span,
+  .equipment-manager-item-copy > span,
+  .equipment-condition-field > span
+) {
+  color: #a6b7ad;
+}
+
+:root[data-theme='dark'] .checklist-progress-meter {
+  background: #30463a;
+}
+
+:root[data-theme='dark'] .checklist-progress-number {
+  color: #8ed4ad;
+}
+
+:root[data-theme='dark'] :where(.checklist-item, .checklist-section-heading) {
+  border-color: #3a5045;
+}
+
+:root[data-theme='dark'] :where(.checklist-item label, .template-item > span, .checklist-item-copy strong) {
+  color: #dbe7e0;
+}
+
+:root[data-theme='dark'] .checklist-item.checked label span {
+  color: #819289;
+}
+
+:root[data-theme='dark'] .checklist-section-heading > span {
+  background: #294236;
+  color: #cfe4d8;
+}
+
+:root[data-theme='dark'] .checklist-section-actions {
+  background: #18261f;
+  border-color: #3a5045;
+}
+
+:root[data-theme='dark'] .checklist-item-actions button:hover {
+  background: #294036;
+  color: #eef5f1;
+}
+
+:root[data-theme='dark'] :where(.equipment-manager-row.equipment-watch, .equipment-manager-row.life-nearing) {
+  background: #302d1d;
+  border-color: #766832;
+}
+
+:root[data-theme='dark'] :where(.equipment-manager-row.equipment-replace, .equipment-manager-row.life-overdue) {
+  background: #352320;
+  border-color: #70433e;
+}
+
+:root[data-theme='dark'] .equipment-condition-field select {
+  background: #132019;
+  color: #e8f0eb;
+  border-color: #3b5045;
+}
+
+:root[data-theme='dark'] .equipment-maintenance-panel {
+  border-color: #3a5045;
+}
+
+:root[data-theme='dark'] .equipment-lifespan-summary:not(.nearing):not(.overdue),
+:root[data-theme='dark'] .equipment-lifespan-summary.current {
+  background: #263b31;
+  color: #c6d8ce;
+}
+
+:root[data-theme='dark'] .equipment-log summary {
+  color: #a9d8bf;
+}
 
 :root[data-theme='dark'] :where(.passport-history-copy strong, .passport-year-divider h4, h1, h2, h3, h4) { color: #eef5f1; }
 :root[data-theme='dark'] :where(.passport-history-copy small, .eyebrow) { color: #d3aa70; }
 :root[data-theme='dark'] .passport-year-divider::after { background: var(--line); }
-:root[data-theme='dark'] :where(.auth-shell, .auth-loading) { background: radial-gradient(circle at top, #20352b, #101a16 68%); }
+
+:root[data-theme='dark'] :where(.auth-shell, .auth-loading) {
+  background: radial-gradient(circle at top, #20352b, #101a16 68%);
+}
+
 :root[data-theme='dark'] .auth-card { background: #1b2923; color: #e8f0eb; border-color: var(--line); }
 :root[data-theme='dark'] .recovery-code-value { background: #14231b; color: #b9dbc8; }
 :root[data-theme='dark'] .auth-warning { background: #3d311d; color: #f0d498; }
 :root[data-theme='dark'] .danger-zone-card { background: #392523; }
+
 :root[data-theme='dark'] :where(.sync-status.cloud, .storage-state-pill.cloud) { background: #1d3b2b; color: #8ed6aa; }
 :root[data-theme='dark'] :where(.sync-status.local, .storage-state-pill.local) { background: #3a321c; color: #e6ca77; }
-:root[data-theme='dark'] .leaflet-control-layers, :root[data-theme='dark'] .leaflet-popup-content-wrapper, :root[data-theme='dark'] .leaflet-popup-tip { background: #1b2923; color: #e8f0eb; }
+
+:root[data-theme='dark'] .leaflet-control-layers,
+:root[data-theme='dark'] .leaflet-popup-content-wrapper,
+:root[data-theme='dark'] .leaflet-popup-tip { background: #1b2923; color: #e8f0eb; }
