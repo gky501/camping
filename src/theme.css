@@ -1,0 +1,108 @@
+:root[data-theme='dark'] {
+  color: #e8f0eb;
+  background: #101a16;
+  --forest: #d8eadf;
+  --forest-2: #8fc3a7;
+  --sage: #2a3d33;
+  --cream: #17231e;
+  --line: #33463d;
+  --muted: #a4b3aa;
+  --white: #1c2923;
+  --shadow: 0 16px 45px rgba(0, 0, 0, .32);
+}
+
+:root[data-theme='dark'] body {
+  background: linear-gradient(145deg, #101a16 0%, #15221c 100%);
+}
+
+:root[data-theme='dark'] :where(.app-header, .mobile-nav, .mobile-primary-nav) {
+  background: rgba(21, 34, 28, .95);
+}
+
+:root[data-theme='dark'] :where(.desktop-nav, .secondary-button, .icon-button, .theme-choice, .auth-method-toggle, .checklist-mode-switch) {
+  background: #25372e;
+}
+
+:root[data-theme='dark'] :where(
+  .map-sidebar, .filter-panel, .site-card, .summary-card, .empty-state, .timeline-card, .settings-card,
+  .modal-card, .modal-header, .modal-actions, .form-section, .account-profile-card, .account-launcher,
+  .passport-stat-card, .passport-section, .passport-empty-card, .upcoming-trip-card,
+  .park-card, .park-site-row, .camper-card, .camper-card-stats, .camper-data-grid, .camper-trip-row,
+  .camper-type-card, .amenity-card, .stats-card, .stats-hero-card, .record-card, .lifetime-strip,
+  .data-tool-card, .storage-status-card, .backup-file-picker, .checklist-section-card,
+  .checklist-edit-dialog, .checklist-dialog-field, .equipment-manager-row, .equipment-log,
+  .equipment-log-entry, .equipment-dialog-body, .equipment-dialog-actions, .equipment-dialog-callout,
+  .trip-dashboard-card, .trip-camper-card, .trip-gate-row, .trip-photo-empty, .trip-photo-grid,
+  .wishlist-card-menu, .maintenance-card, .camper-maintenance-section, .advanced-map-filters,
+  .map-filter-toggle, .map-filter-check, .planned-trip-callout, .future-return-placeholder
+) {
+  background: #1b2923;
+  color: #e8f0eb;
+  border-color: var(--line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .2);
+}
+
+:root[data-theme='dark'] :where(.modal-header, .modal-actions) {
+  background: rgba(27, 41, 35, .96);
+}
+
+:root[data-theme='dark'] :where(
+  input, select, textarea, .search-field, .choice, .month-weight, .weight-row output,
+  .observation-row select, .checklist-trip-toolbar, .equipment-condition-field,
+  .equipment-month-input, .stay-rating-grid
+) {
+  background-color: #132019;
+  color: #e8f0eb;
+  border-color: #3b5045;
+}
+
+:root[data-theme='dark'] input::placeholder,
+:root[data-theme='dark'] textarea::placeholder { color: #7f9287; }
+
+:root[data-theme='dark'] :where(.nav-button, .mobile-nav button, .mobile-primary-nav button) { color: #a4b3aa; }
+:root[data-theme='dark'] :where(.nav-button.active, .theme-choice button.active, .auth-method-toggle button.active) {
+  background: #344a3e;
+  color: #f2f7f4;
+}
+
+:root[data-theme='dark'] :where(.chip, .meta-pill, .trip-status-pill, .night-summary, .passport-section-heading > span) {
+  background: #2b4035;
+  color: #d8eadf;
+}
+
+:root[data-theme='dark'] .passport-history-card {
+  background: linear-gradient(105deg, color-mix(in srgb, var(--trip-color) 23%, #17231e), #1b2923 52%);
+  color: #e8f0eb;
+}
+
+:root[data-theme='dark'] .upcoming-trip-card {
+  background: linear-gradient(155deg, color-mix(in srgb, var(--trip-color) 18%, #17231e), #1b2923 58%);
+}
+
+:root[data-theme='dark'] .passport-history-card.season-winter { --trip-color: #82b4d2; --trip-wash: #203442; }
+:root[data-theme='dark'] .passport-history-card.season-spring { --trip-color: #a5c774; --trip-wash: #2c3824; }
+:root[data-theme='dark'] .passport-history-card.season-summer { --trip-color: #72c6ad; --trip-wash: #203a32; }
+:root[data-theme='dark'] .passport-history-card.season-autumn { --trip-color: #e0a061; --trip-wash: #44301f; }
+:root[data-theme='dark'] .passport-date-badge {
+  background: color-mix(in srgb, var(--trip-color) 19%, #132019);
+}
+
+:root[data-theme='dark'] :where(.passport-history-copy strong, .passport-year-divider h4, h1, h2, h3, h4) { color: #eef5f1; }
+:root[data-theme='dark'] :where(.passport-history-copy small, .eyebrow) { color: #d3aa70; }
+:root[data-theme='dark'] .passport-year-divider::after { background: var(--line); }
+
+:root[data-theme='dark'] :where(.auth-shell, .auth-loading) {
+  background: radial-gradient(circle at top, #20352b, #101a16 68%);
+}
+
+:root[data-theme='dark'] .auth-card { background: #1b2923; color: #e8f0eb; border-color: var(--line); }
+:root[data-theme='dark'] .recovery-code-value { background: #14231b; color: #b9dbc8; }
+:root[data-theme='dark'] .auth-warning { background: #3d311d; color: #f0d498; }
+:root[data-theme='dark'] .danger-zone-card { background: #392523; }
+
+:root[data-theme='dark'] :where(.sync-status.cloud, .storage-state-pill.cloud) { background: #1d3b2b; color: #8ed6aa; }
+:root[data-theme='dark'] :where(.sync-status.local, .storage-state-pill.local) { background: #3a321c; color: #e6ca77; }
+
+:root[data-theme='dark'] .leaflet-control-layers,
+:root[data-theme='dark'] .leaflet-popup-content-wrapper,
+:root[data-theme='dark'] .leaflet-popup-tip { background: #1b2923; color: #e8f0eb; }

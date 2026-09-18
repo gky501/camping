@@ -28,9 +28,19 @@
 .passport-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
 .passport-section-heading h3 { margin: 2px 0 0; font-size: 1.45rem; }
 .passport-section-heading > span { display: grid; place-items: center; min-width: 38px; height: 38px; border-radius: 14px; background: #edf3ee; color: var(--forest); font-weight: 900; }
+.passport-section-intro { margin: 5px 0 0; color: var(--muted); font-size: .82rem; }
+.completed-heading { align-items: flex-start; margin-bottom: 20px; }
+.completed-heading > span { display: flex; flex-direction: column; min-width: 58px; height: auto; padding: 9px 12px; border-radius: 16px; line-height: 1; }
+.completed-heading > span strong { font-size: 1.05rem; }
+.completed-heading > span small { margin-top: 4px; color: var(--muted); font-size: .6rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .upcoming-trip-rail { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(310px, 420px); gap: 14px; overflow-x: auto; overscroll-behavior-inline: contain; scroll-snap-type: inline mandatory; padding: 2px 2px 10px; }
-.upcoming-trip-card { display: grid; gap: 15px; padding: 18px; border: 1px solid #d7e1d8; border-radius: 20px; background: linear-gradient(155deg, #f8fbf7, #fff); scroll-snap-align: start; }
-.upcoming-trip-date { display: flex; align-items: center; gap: 8px; color: var(--forest); font-size: .78rem; }
+.upcoming-trip-card { --trip-color: #39735e; --trip-wash: #eef6f1; position: relative; display: grid; gap: 15px; overflow: hidden; padding: 20px 18px 18px; border: 1px solid color-mix(in srgb, var(--trip-color) 24%, #d7e1d8); border-radius: 20px; background: linear-gradient(155deg, var(--trip-wash), #fff 58%); scroll-snap-align: start; }
+.upcoming-trip-card::before { position: absolute; inset: 0 0 auto; height: 5px; content: ''; background: var(--trip-color); }
+.upcoming-trip-card.season-winter { --trip-color: #486b85; --trip-wash: #edf4f8; }
+.upcoming-trip-card.season-spring { --trip-color: #698142; --trip-wash: #f1f5e9; }
+.upcoming-trip-card.season-summer { --trip-color: #287966; --trip-wash: #eaf5f0; }
+.upcoming-trip-card.season-autumn { --trip-color: #a46730; --trip-wash: #faf1e6; }
+.upcoming-trip-date { display: flex; align-items: center; gap: 8px; color: var(--trip-color); font-size: .78rem; }
 .upcoming-trip-date .trip-status-pill { margin-left: auto; }
 .upcoming-trip-title { display: flex; align-items: center; gap: 12px; }
 .upcoming-trip-title > span { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 auto; border-radius: 15px; background: var(--forest); color: white; }
@@ -38,20 +48,36 @@
 .upcoming-trip-title p { display: flex; align-items: center; gap: 5px; margin: 4px 0 0; color: var(--muted); font-size: .78rem; }
 .upcoming-trip-actions { display: flex; gap: 9px; margin-top: auto; }
 .upcoming-trip-actions button { flex: 1; justify-content: center; }
+.passport-history-years, .passport-history-year { display: grid; gap: 13px; }
+.passport-history-years { gap: 22px; }
+.passport-year-divider { display: flex; align-items: center; gap: 12px; }
+.passport-year-divider::after { order: 2; content: ''; height: 1px; flex: 1; background: #e3e9e3; }
+.passport-year-divider h4 { margin: 0; color: var(--forest); font-size: 1rem; }
+.passport-year-divider span { order: 3; color: var(--muted); font-size: .7rem; font-weight: 700; }
 .passport-history-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.passport-history-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 13px; width: 100%; padding: 15px; border: 1px solid #dde4dd; border-radius: 18px; background: #fff; color: inherit; text-align: left; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+.passport-history-card { --trip-color: #39735e; --trip-wash: #eef6f1; position: relative; display: grid; grid-template-columns: 66px minmax(0, 1fr) auto auto; align-items: center; gap: 14px; width: 100%; min-height: 94px; overflow: hidden; padding: 0 15px 0 0; border: 1px solid color-mix(in srgb, var(--trip-color) 24%, var(--line)); border-radius: 18px; background: linear-gradient(105deg, var(--trip-wash), #fff 48%); color: inherit; text-align: left; cursor: pointer; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
 .passport-history-card:hover { transform: translateY(-2px); border-color: #b7cbbb; box-shadow: 0 10px 24px rgba(31, 54, 41, .1); }
-.passport-stamp { display: grid; place-items: center; width: 52px; height: 52px; border: 2px dashed #a8783c; border-radius: 50%; color: #875d29; transform: rotate(-6deg); }
-.passport-stamp svg { width: 19px; }
-.passport-stamp small { margin-top: -4px; font-size: .58rem; font-weight: 900; }
+.passport-history-card:focus-visible { outline: 3px solid rgba(45, 107, 80, .25); outline-offset: 2px; }
+.passport-history-card.season-winter { --trip-color: #486b85; --trip-wash: #edf4f8; }
+.passport-history-card.season-spring { --trip-color: #698142; --trip-wash: #f1f5e9; }
+.passport-history-card.season-summer { --trip-color: #287966; --trip-wash: #eaf5f0; }
+.passport-history-card.season-autumn { --trip-color: #a46730; --trip-wash: #faf1e6; }
+.passport-date-badge { align-self: stretch; display: grid; grid-template-rows: auto 1fr; place-items: center; width: 66px; min-height: 92px; overflow: hidden; border-right: 1px solid color-mix(in srgb, var(--trip-color) 28%, transparent); background: color-mix(in srgb, var(--trip-color) 15%, white); color: var(--trip-color); }
+.passport-date-badge small { width: 100%; padding: 8px 0 7px; background: var(--trip-color); color: white; font-size: .62rem; font-weight: 900; letter-spacing: .1em; text-align: center; }
+.passport-date-badge strong { display: grid; place-items: center; font-size: 1.55rem; line-height: 1; }
 .passport-history-copy { display: grid; min-width: 0; gap: 3px; }
 .passport-history-copy small { color: #8b6a40; font-weight: 800; }
 .passport-history-copy strong, .passport-history-copy em { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.passport-history-copy strong { color: var(--forest); font-size: 1rem; }
-.passport-history-copy em { color: var(--muted); font-size: .75rem; font-style: normal; }
-.passport-night-count { display: inline-flex; align-items: center; gap: 5px; color: var(--forest); font-size: .78rem; font-weight: 900; }
+.passport-history-copy strong { color: var(--forest); font-size: 1.03rem; }
+.passport-history-copy em { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: .75rem; font-style: normal; }
+.passport-history-copy em svg { flex: 0 0 auto; }
+.passport-night-count { display: grid; grid-template-columns: auto auto; align-items: center; column-gap: 4px; color: var(--forest); font-size: .78rem; font-weight: 900; }
+.passport-night-count > svg { grid-row: 1 / span 2; }
+.passport-night-count > strong { font-size: .9rem; line-height: 1; }
+.passport-night-count > small { color: var(--muted); font-size: .58rem; font-weight: 700; }
 .passport-history-chevron { color: #8ba093; }
-.passport-show-more { display: flex; margin: 16px auto 0; }
+.passport-show-more { display: flex; align-items: center; justify-content: space-between; width: min(100%, 360px); margin: 22px auto 0; padding-inline: 18px; }
+.passport-show-more small { color: var(--muted); font-size: .68rem; }
 .passport-empty-card { display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px dashed #cbd8cd; border-radius: 18px; background: #f7f9f6; color: var(--forest); }
 .passport-empty-card > svg { flex: 0 0 auto; }
 .passport-empty-card strong, .passport-empty-card p { display: block; margin: 0; }
@@ -69,10 +95,19 @@
   .passport-hero .primary-button { width: 100%; justify-content: center; }
   .passport-stat-card, .passport-section { padding: 17px; border-radius: 20px; }
   .passport-stat-numbers { grid-template-columns: 1fr 1fr; }
-  .upcoming-trip-rail { grid-auto-columns: minmax(280px, 88vw); }
-  .upcoming-trip-actions { flex-direction: column; }
+  .upcoming-trip-rail { display: flex; gap: 12px; width: calc(100% + 17px); max-width: none; margin-right: -17px; padding: 2px 22px 10px 2px; overflow-x: auto; scroll-padding-inline: 2px 22px; }
+  .upcoming-trip-card { flex: 0 0 calc(100% - 28px); width: calc(100% - 28px); max-width: none; padding: 19px 16px 16px; }
+  .upcoming-trip-date { flex-wrap: wrap; }
+  .upcoming-trip-date .trip-status-pill { margin-left: 0; }
+  .upcoming-trip-title h4 { overflow-wrap: normal; word-break: normal; }
+  .upcoming-trip-title p { white-space: normal; }
+  .upcoming-trip-card .trip-meta-row { align-items: stretch; }
+  .upcoming-trip-card .meta-pill { max-width: 100%; white-space: normal; line-height: 1.25; }
+  .upcoming-trip-actions { flex-direction: row; }
+  .upcoming-trip-actions button { min-width: 0; padding-inline: 10px; }
   .passport-history-card { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .passport-night-count { grid-column: 2; }
+  .passport-night-count { grid-column: 2; display: flex; }
+  .passport-night-count > small::before { content: '\00b7'; margin-right: 4px; }
   .passport-history-chevron { grid-column: 3; grid-row: 1 / span 2; }
   .passport-empty-card { align-items: flex-start; flex-wrap: wrap; }
   .passport-empty-card button { width: 100%; margin-left: 0; justify-content: center; }

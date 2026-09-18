@@ -253,6 +253,36 @@
   margin-top: 14px;
 }
 
+.theme-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 5px;
+  border-radius: 14px;
+  background: #e9efea;
+}
+
+.theme-choice button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 800;
+}
+
+.theme-choice button.active {
+  background: var(--white);
+  color: var(--forest);
+  box-shadow: 0 4px 14px rgba(23, 62, 49, .1);
+}
+
 .auth-admin-toggle {
   display: flex;
   align-items: center;
