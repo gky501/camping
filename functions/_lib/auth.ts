@@ -5,12 +5,14 @@ export interface AuthEnv {
 }
 
 export type AuthRole = 'admin' | 'member';
+export type AuthTheme = 'light' | 'dark';
 
 export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
   role: AuthRole;
+  theme: AuthTheme;
 }
 
 interface AuthUserRow extends Record<string, unknown> {
@@ -18,6 +20,7 @@ interface AuthUserRow extends Record<string, unknown> {
   username: string;
   display_name: string;
   role: AuthRole;
+  theme: AuthTheme;
   password_hash: string;
   password_salt: string;
   recovery_hash: string;
@@ -94,7 +97,7 @@ function recoveryCode(): string {
 }
 
 function userFromRow(row: AuthUserRow): AuthUser {
-  return { id: String(row.id), username: String(row.username), displayName: String(row.display_name), role: row.role === 'admin' ? 'admin' : 'member' };
+  return { id: String(row.id), username: String(row.username), displayName: String(row.display_name), role: row.role === 'admin' ? 'admin' : 'member', theme: row.theme === 'dark' ? 'dark' : 'light' };
 }
 
 export function authError(message: string, status = 400): Response {
@@ -119,6 +122,7 @@ export async function ensureAuthSchema(db: D1Database): Promise<void> {
     username TEXT NOT NULL UNIQUE COLLATE NOCASE,
     display_name TEXT NOT NULL,
     role TEXT NOT NULL DEFAULT 'member',
+    theme TEXT NOT NULL DEFAULT 'light',
     password_hash TEXT NOT NULL,
     password_salt TEXT NOT NULL,
     recovery_hash TEXT NOT NULL,
@@ -127,6 +131,15 @@ export async function ensureAuthSchema(db: D1Database): Promise<void> {
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
   )`).run();
+  const userColumns = await db.prepare('PRAGMA table_info(auth_users)').all<{ name: string }>();
+  if (!userColumns.results.some((column) => String(column.name) === 'theme')) {
+    try {
+      await db.prepare("ALTER TABLE auth_users ADD COLUMN theme TEXT NOT NULL DEFAULT 'light'").run();
+    } catch (cause) {
+      const refreshedColumns = await db.prepare('PRAGMA table_info(auth_users)').all<{ name: string }>();
+      if (!refreshedColumns.results.some((column) => String(column.name) === 'theme')) throw cause;
+    }
+  }
   await db.prepare(`CREATE TABLE IF NOT EXISTS auth_sessions (
     token_hash TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
@@ -157,7 +170,7 @@ export async function currentUser(request: Request, db: D1Database): Promise<Aut
   const token = cookieValue(request);
   if (!token) return undefined;
   const tokenHash = await sha256(token);
-  const row = await db.prepare(`SELECT u.id,u.username,u.display_name,u.role,u.password_hash,u.password_salt,u.recovery_hash,u.failed_attempts,u.locked_until
+  const row = await db.prepare(`SELECT u.id,u.username,u.display_name,u.role,u.theme,u.password_hash,u.password_salt,u.recovery_hash,u.failed_attempts,u.locked_until
     FROM auth_sessions s INNER JOIN auth_users u ON u.id=s.user_id
     WHERE s.token_hash=? AND s.expires_at>CURRENT_TIMESTAMP`).bind(tokenHash).first<AuthUserRow>();
   return row ? userFromRow(row) : undefined;
@@ -227,7 +240,7 @@ export async function createUser(db: D1Database, input: {
       salt,
       await sha256(normalizeRecoveryCode(generatedRecoveryCode)),
     ).run();
-  return { user: { id, username, displayName, role: input.role }, recoveryCode: generatedRecoveryCode };
+  return { user: { id, username, displayName, role: input.role, theme: 'light' }, recoveryCode: generatedRecoveryCode };
 }
 
 export async function createFirstAdmin(db: D1Database, input: { username: string; displayName: string; password: string }): Promise<{ user: AuthUser; recoveryCode: string; token: string }> {
@@ -240,7 +253,7 @@ export async function createFirstAdmin(db: D1Database, input: { username: string
 export async function login(db: D1Database, usernameInput: string, password: string): Promise<{ user: AuthUser; token: string }> {
   await ensureAuthSchema(db);
   const username = normalizeUsername(usernameInput);
-  const row = await db.prepare(`SELECT id,username,display_name,role,password_hash,password_salt,recovery_hash,failed_attempts,locked_until
+  const row = await db.prepare(`SELECT id,username,display_name,role,theme,password_hash,password_salt,recovery_hash,failed_attempts,locked_until
     FROM auth_users WHERE username=? COLLATE NOCASE`).bind(username).first<AuthUserRow>();
   if (!row) throw new Error('Username or password is incorrect.');
   if (row.locked_until && new Date(row.locked_until).getTime() > Date.now()) throw new Error('Too many attempts. Try again in about 15 minutes.');
@@ -276,7 +289,7 @@ async function replaceCredentials(db: D1Database, row: AuthUserRow, newPassword:
 
 export async function resetPassword(db: D1Database, input: { username: string; newPassword: string; recoveryCode?: string; masterKey?: string; masterKeyHash?: string }): Promise<{ user: AuthUser; recoveryCode: string; token: string }> {
   await ensureAuthSchema(db);
-  const row = await db.prepare(`SELECT id,username,display_name,role,password_hash,password_salt,recovery_hash,failed_attempts,locked_until
+  const row = await db.prepare(`SELECT id,username,display_name,role,theme,password_hash,password_salt,recovery_hash,failed_attempts,locked_until
     FROM auth_users WHERE username=? COLLATE NOCASE`).bind(normalizeUsername(input.username)).first<AuthUserRow>();
   if (!row) throw new Error('Account not found.');
   let verified = false;
@@ -287,7 +300,7 @@ export async function resetPassword(db: D1Database, input: { username: string; n
 }
 
 export async function changePassword(db: D1Database, user: AuthUser, currentPassword: string, newPassword: string): Promise<{ token: string }> {
-  const row = await db.prepare(`SELECT id,username,display_name,role,password_hash,password_salt,recovery_hash,failed_attempts,locked_until FROM auth_users WHERE id=?`).bind(user.id).first<AuthUserRow>();
+  const row = await db.prepare(`SELECT id,username,display_name,role,theme,password_hash,password_salt,recovery_hash,failed_attempts,locked_until FROM auth_users WHERE id=?`).bind(user.id).first<AuthUserRow>();
   if (!row) throw new Error('Account not found.');
   const verified = timingSafeEqual(await passwordHash(currentPassword, String(row.password_salt)), String(row.password_hash));
   if (!verified) throw new Error('Current password is incorrect.');
@@ -307,13 +320,20 @@ export async function rotateRecoveryCode(db: D1Database, userId: string): Promis
   return generated;
 }
 
+export async function saveThemePreference(db: D1Database, user: AuthUser, theme: AuthTheme): Promise<AuthUser> {
+  await ensureAuthSchema(db);
+  await db.prepare('UPDATE auth_users SET theme=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(theme, user.id).run();
+  return { ...user, theme };
+}
+
 export async function listUsers(db: D1Database): Promise<AuthUser[]> {
   await ensureAuthSchema(db);
-  const rows = await db.prepare('SELECT id,username,display_name,role FROM auth_users ORDER BY created_at').all();
+  const rows = await db.prepare('SELECT id,username,display_name,role,theme FROM auth_users ORDER BY created_at').all();
   return (rows.results as Array<Record<string, unknown>>).map((row) => ({
     id: String(row.id),
     username: String(row.username),
     displayName: String(row.display_name),
     role: row.role === 'admin' ? 'admin' : 'member',
+    theme: row.theme === 'dark' ? 'dark' : 'light',
   }));
 }
