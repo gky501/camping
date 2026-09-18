@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
-import { Filter, LocateFixed, Maximize2, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
+import { Filter, Layers, LocateFixed, MapPinned, Maximize2, RotateCcw, Search, SlidersHorizontal, X } from 'lucide-react';
 import type { Campsite, ElectricService, PreferenceProfile, Stay } from '../types';
 import { distanceMiles } from '../lib/geo';
 import { calculateOverall } from '../lib/scoring';
 import { ClusteredSiteMarkers } from './ClusteredSiteMarkers';
 import { SiteCard } from './SiteCard';
+import { SiteLocationPicker } from './SiteLocationPicker';
 
 const DEFAULT_CENTER: [number, number] = [34.95, -92.6];
 const TILE_URL = import.meta.env.VITE_TILE_URL || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTRIBUTION = import.meta.env.VITE_TILE_ATTRIBUTION || '&copy; OpenStreetMap contributors';
+const SATELLITE_TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+const SATELLITE_ATTRIBUTION = 'Tiles &copy; Esri';
 
 type StatusFilter = 'all' | 'wishlist' | 'visited';
 type ElectricFilter = 'all' | ElectricService;
@@ -78,9 +81,10 @@ interface MapPanelProps {
   selectedSiteId?: string;
   onSelectSite: (site: Campsite) => void;
   onLogStay: (site: Campsite) => void;
+  onUpdateSite: (site: Campsite) => Promise<void>;
 }
 
-export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, onLogStay }: MapPanelProps) {
+export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, onLogStay, onUpdateSite }: MapPanelProps) {
   const [search, setSearch] = useState('');
   const [minimumScore, setMinimumScore] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -93,6 +97,11 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
   const [fitRequest, setFitRequest] = useState(0);
   const [locateRequest, setLocateRequest] = useState(0);
   const [userLocation, setUserLocation] = useState<UserLocation>();
+  const [baseLayer, setBaseLayer] = useState<'street' | 'satellite'>('street');
+  const [editingLocation, setEditingLocation] = useState<Campsite>();
+  const [draftLocation, setDraftLocation] = useState<UserLocation>();
+  const [savingLocation, setSavingLocation] = useState(false);
+  const [locationSaveError, setLocationSaveError] = useState('');
   const selectedSite = sites.find((site) => site.id === selectedSiteId);
   const handleLocationError = useCallback((message: string) => window.alert(message), []);
 
@@ -157,6 +166,27 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
     }
   }
 
+  function openLocationEditor(site: Campsite) {
+    setEditingLocation(site);
+    setDraftLocation({ latitude: site.latitude, longitude: site.longitude });
+    setLocationSaveError('');
+  }
+
+  async function saveLocation() {
+    if (!editingLocation || !draftLocation) return;
+    setSavingLocation(true);
+    setLocationSaveError('');
+    try {
+      await onUpdateSite({ ...editingLocation, ...draftLocation });
+      setEditingLocation(undefined);
+      setDraftLocation(undefined);
+    } catch (cause) {
+      setLocationSaveError(cause instanceof Error ? cause.message : 'Unable to save the corrected location.');
+    } finally {
+      setSavingLocation(false);
+    }
+  }
+
   return (
     <section className="map-layout">
       <aside className="map-sidebar">
@@ -205,7 +235,11 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
       </aside>
       <div className="map-canvas-wrap">
         <MapContainer center={DEFAULT_CENTER} zoom={7} scrollWheelZoom className="leaflet-map">
-          <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
+          <TileLayer
+            key={baseLayer}
+            attribution={baseLayer === 'satellite' ? SATELLITE_ATTRIBUTION : TILE_ATTRIBUTION}
+            url={baseLayer === 'satellite' ? SATELLITE_TILE_URL : TILE_URL}
+          />
           <MapController
             site={selectedSite}
             filteredSites={filtered}
@@ -223,10 +257,12 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
             userLocation={userLocation}
             onSelectSite={onSelectSite}
             onLogStay={onLogStay}
+            onEditLocation={openLocationEditor}
             onDeleteSite={deleteOrphanSite}
           />
         </MapContainer>
         <div className="map-tool-stack">
+          <button title={baseLayer === 'satellite' ? 'Switch to street map' : 'Switch to satellite map'} aria-label={baseLayer === 'satellite' ? 'Switch to street map' : 'Switch to satellite map'} className={baseLayer === 'satellite' ? 'active' : ''} onClick={() => setBaseLayer((layer) => layer === 'street' ? 'satellite' : 'street')}><Layers /></button>
           <button title="Fit all filtered campsites" onClick={() => setFitRequest((value) => value + 1)}><Maximize2 /></button>
           <button title="Find my location and sort nearest first" className={userLocation ? 'active' : ''} onClick={() => setLocateRequest((value) => value + 1)}><LocateFixed /></button>
         </div>
@@ -240,6 +276,17 @@ export function MapPanel({ sites, stays, profile, selectedSiteId, onSelectSite, 
           <span><i className="legend-dot cluster-legend-dot" /> Cluster</span>
         </div>
       </div>
+      {editingLocation && draftLocation && <div className="modal-backdrop map-location-editor-backdrop" role="presentation" onMouseDown={() => !savingLocation && setEditingLocation(undefined)}>
+        <section className="modal-card map-location-editor" role="dialog" aria-modal="true" aria-labelledby="map-location-editor-title" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="modal-header"><div><p className="eyebrow">Correct map pin</p><h3 id="map-location-editor-title">{editingLocation.park} · Site {editingLocation.siteNumber}</h3><p>Move the pin to the exact campsite. Saving updates this campsite everywhere it appears.</p></div><button className="icon-button" aria-label="Close location editor" onClick={() => setEditingLocation(undefined)} disabled={savingLocation}><X /></button></div>
+          <div className="map-location-editor-body">
+            <SiteLocationPicker latitude={draftLocation.latitude} longitude={draftLocation.longitude} onPick={(latitude, longitude) => setDraftLocation({ latitude, longitude })} />
+            <div className="coordinate-line"><span><MapPinned size={15} /> {draftLocation.latitude.toFixed(7)}, {draftLocation.longitude.toFixed(7)}</span></div>
+            {locationSaveError && <p className="form-error">{locationSaveError}</p>}
+          </div>
+          <div className="modal-actions"><button className="secondary-button" onClick={() => setEditingLocation(undefined)} disabled={savingLocation}>Cancel</button><button className="primary-button" onClick={() => void saveLocation()} disabled={savingLocation}>{savingLocation ? 'Saving…' : 'Save location'}</button></div>
+        </section>
+      </div>}
     </section>
   );
 }

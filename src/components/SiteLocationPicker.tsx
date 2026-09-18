@@ -46,9 +46,19 @@ export function SiteLocationPicker({ latitude, longitude, onPick, readOnly = fal
         <TileLayer attribution={TILE_ATTRIBUTION} url={TILE_URL} />
         <Recenter latitude={valid ? latitude : undefined} longitude={valid ? longitude : undefined} zoom={zoom} />
         {!readOnly && <ClickPicker onPick={onPick} />}
-        {valid && <Marker position={[latitude as number, longitude as number]} icon={pinIcon} />}
+        {valid && <Marker
+          position={[latitude as number, longitude as number]}
+          icon={pinIcon}
+          draggable={!readOnly}
+          eventHandlers={!readOnly ? {
+            dragend(event) {
+              const position = event.target.getLatLng();
+              onPick?.(position.lat, position.lng);
+            },
+          } : undefined}
+        />}
       </MapContainer>
-      {!readOnly && <span className="map-picker-help">Click the exact campsite location to move the pin.</span>}
+      {!readOnly && <span className="map-picker-help">Click the map or drag the pin to the exact campsite location.</span>}
     </div>
   );
 }

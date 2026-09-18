@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
 import { Marker, Popup, useMap } from 'react-leaflet';
-import { Bookmark, ExternalLink, Trash2 } from 'lucide-react';
+import { Bookmark, ExternalLink, MapPinned, Trash2 } from 'lucide-react';
 import type { Campsite, PreferenceProfile, Stay } from '../types';
 import { distanceMiles } from '../lib/geo';
 import { calculateOverall, formatScore, scoreClass } from '../lib/scoring';
@@ -19,6 +19,7 @@ interface ClusteredSiteMarkersProps {
   userLocation?: UserLocation;
   onSelectSite: (site: Campsite) => void;
   onLogStay: (site: Campsite) => void;
+  onEditLocation: (site: Campsite) => void;
   onDeleteSite: (site: Campsite) => Promise<void>;
 }
 
@@ -132,6 +133,7 @@ export function ClusteredSiteMarkers({
   userLocation,
   onSelectSite,
   onLogStay,
+  onEditLocation,
   onDeleteSite,
 }: ClusteredSiteMarkersProps) {
   const map = useMap();
@@ -228,6 +230,7 @@ export function ClusteredSiteMarkers({
                 <div className="map-popup-actions">
                   <button className="primary-button small" onClick={() => onLogStay(site)}>{isWishlist ? 'Log first stay' : 'Log another stay'}</button>
                   <a className="secondary-button small" href={`https://www.google.com/maps/dir/?api=1&destination=${site.latitude},${site.longitude}`} target="_blank" rel="noreferrer"><ExternalLink size={15} /> Directions</a>
+                  <button className="secondary-button small map-edit-location-button" title="Edit campsite location" aria-label={`Edit location for ${site.park} site ${site.siteNumber}`} onClick={() => onEditLocation(site)}><MapPinned size={15} /> Edit location</button>
                   {!hasTrips && (
                     <button className="text-button destructive-text-button small" onClick={() => void onDeleteSite(site)}>
                       <Trash2 size={15} /> Delete campsite
