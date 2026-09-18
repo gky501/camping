@@ -199,8 +199,18 @@ async function createSite(db: D1Database, body: JsonObject) {
 }
 
 async function saveSite(db: D1Database, id: string, body: JsonObject) {
-  await db.prepare(`UPDATE sites SET park=?,state=?,loop=?,site_number=?,latitude=?,longitude=?,notes=?,view_types_json=?,favorite=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
-    .bind(body.park, body.state, body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'wishlist', id).run();
+  const statements: D1PreparedStatement[] = [db.prepare(`UPDATE sites SET park=?,state=?,area=?,loop=?,site_number=?,latitude=?,longitude=?,notes=?,amenities_json=?,view_types_json=?,favorite=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`)
+    .bind(body.park, body.state, body.area ?? '', body.loop, body.siteNumber, body.latitude, body.longitude, body.notes ?? '', JSON.stringify(body.amenities ?? {}), JSON.stringify(body.viewTypes ?? []), body.favorite ? 1 : 0, body.status ?? 'wishlist', id)];
+  const snapshots = await db.prepare('SELECT id,site_snapshot_json FROM stays WHERE site_id=? AND site_snapshot_json IS NOT NULL').bind(id).all();
+  for (const row of snapshots.results as Array<Record<string, unknown>>) {
+    try {
+      const snapshot = JSON.parse(String(row.site_snapshot_json)) as Record<string, unknown>;
+      snapshot.latitude = Number(body.latitude);
+      snapshot.longitude = Number(body.longitude);
+      statements.push(db.prepare('UPDATE stays SET site_snapshot_json=? WHERE id=?').bind(JSON.stringify(snapshot), row.id));
+    } catch { /* Leave malformed legacy snapshots unchanged. */ }
+  }
+  await db.batch(statements);
   return json({ ok: true });
 }
 
