@@ -55,6 +55,14 @@ function dateBadge(dateValue: string): { month: string; day: string } {
   };
 }
 
+function seasonForDate(dateValue: string): 'winter' | 'spring' | 'summer' | 'autumn' {
+  const month = Number(dateValue.slice(5, 7));
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  if (month >= 9 && month <= 11) return 'autumn';
+  return 'winter';
+}
+
 export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, onChecklist, onDashboard, onOpenRecap }: {
   sites: Campsite[];
   stays: Stay[];
@@ -229,7 +237,8 @@ export function PassportPanel({ sites, stays, campers, onAdd, onEdit, onDelete, 
               {yearTrips.map((stay) => {
                 const location = locationFor(stay, sites);
                 const badge = dateBadge(stay.arrivalDate);
-                return <button className="passport-history-card" key={stay.id} onClick={() => setSelectedStay(stay)} aria-label={`Open ${location?.park ?? 'camping trip'}, ${formatDateRange(stay.arrivalDate, stay.departureDate)}`}>
+                const season = seasonForDate(stay.arrivalDate);
+                return <button className={`passport-history-card season-${season}`} key={stay.id} onClick={() => setSelectedStay(stay)} aria-label={`Open ${location?.park ?? 'camping trip'}, ${formatDateRange(stay.arrivalDate, stay.departureDate)}`}>
                   <span className="passport-date-badge"><small>{badge.month}</small><strong>{badge.day}</strong></span>
                   <span className="passport-history-copy"><small>{formatDateRange(stay.arrivalDate, stay.departureDate)}</small><strong>{location?.park ?? 'Unknown campsite'}</strong><em><MapPin size={13} /> {locationLine(stay, sites) || location?.state || 'Location details unavailable'}</em></span>
                   <span className="passport-night-count"><Moon size={15} /><strong>{stay.nights}</strong><small>{stay.nights === 1 ? 'night' : 'nights'}</small></span>

@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { Copy, Download, KeyRound, LockKeyhole, LogOut, Plus, RefreshCw, ShieldCheck, TentTree, UserRound, Users, X } from 'lucide-react';
+import { Copy, Download, KeyRound, LockKeyhole, LogOut, Moon, Plus, RefreshCw, ShieldCheck, Sun, TentTree, UserRound, Users, X } from 'lucide-react';
 
 export interface AuthUser {
   id: string;
   username: string;
   displayName: string;
   role: 'admin' | 'member';
+  theme: 'light' | 'dark';
 }
 
 interface AuthContextValue {
@@ -83,11 +84,12 @@ function RecoveryCodeCard({ notice, onContinue }: { notice: RecoveryNotice; onCo
   );
 }
 
-function AccountModal({ user, onClose, onLogout, onRecoveryNotice }: {
+function AccountModal({ user, onClose, onLogout, onRecoveryNotice, onThemeChange }: {
   user: AuthUser;
   onClose: () => void;
   onLogout: () => void;
   onRecoveryNotice: (notice: RecoveryNotice) => void;
+  onThemeChange: (theme: AuthUser['theme']) => Promise<void>;
 }) {
   const [currentValue, setCurrentValue] = useState('');
   const [nextValue, setNextValue] = useState('');
@@ -144,11 +146,30 @@ function AccountModal({ user, onClose, onLogout, onRecoveryNotice }: {
     finally { setBusy(false); }
   }
 
+  async function chooseTheme(theme: AuthUser['theme']) {
+    if (theme === user.theme) return;
+    setBusy(true); setMessage('');
+    try {
+      await onThemeChange(theme);
+      setMessage(`${theme === 'dark' ? 'Dark' : 'Light'} mode saved to your profile.`);
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : 'Unable to save appearance preference.');
+    } finally { setBusy(false); }
+  }
+
   return (
     <div className="modal-backdrop account-modal-backdrop" role="presentation" onMouseDown={onClose}>
       <div className="modal-card account-modal" role="dialog" aria-modal="true" aria-labelledby="account-title" onMouseDown={(event) => event.stopPropagation()}>
         <div className="modal-header"><div><p className="eyebrow">Private access</p><h2 id="account-title">Account & security</h2></div><button className="icon-button" onClick={onClose} aria-label="Close"><X /></button></div>
         <section className="account-profile-card"><span><UserRound /></span><div><strong>{user.displayName}</strong><p>@{user.username} · {user.role === 'admin' ? 'Administrator' : 'Household member'}</p></div></section>
+
+        <section className="form-section auth-account-section appearance-preference">
+          <div className="section-heading-row"><div><h3>Appearance</h3><p>Saved to your profile and used on every device.</p></div>{user.theme === 'dark' ? <Moon /> : <Sun />}</div>
+          <div className="theme-choice" role="group" aria-label="Color theme">
+            <button type="button" disabled={busy} className={user.theme === 'light' ? 'active' : ''} aria-pressed={user.theme === 'light'} onClick={() => void chooseTheme('light')}><Sun size={17} /> Light</button>
+            <button type="button" disabled={busy} className={user.theme === 'dark' ? 'active' : ''} aria-pressed={user.theme === 'dark'} onClick={() => void chooseTheme('dark')}><Moon size={17} /> Dark</button>
+          </div>
+        </section>
 
         <form className="form-section auth-account-section" onSubmit={changeCredential}>
           <div className="section-heading-row"><div><h3>Change password</h3><p>Changing it signs this account out on other devices.</p></div><LockKeyhole /></div>
@@ -209,6 +230,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    document.documentElement.dataset.theme = user?.theme ?? 'light';
+    document.documentElement.style.colorScheme = user?.theme ?? 'light';
+  }, [user?.theme]);
+
   const contextValue = useMemo(() => user ? { user, openAccount: () => setAccountOpen(true) } : undefined, [user]);
 
   async function submitSetup(event: FormEvent) {
@@ -254,12 +280,25 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setAccountOpen(false); setUser(undefined); setUsername(''); setCredential(''); setScreen('login');
   }
 
+  async function changeTheme(theme: AuthUser['theme']) {
+    if (!user || theme === user.theme) return;
+    const previous = user;
+    setUser({ ...user, theme });
+    try {
+      const result = await requestJson<{ user: AuthUser }>('/api/auth/preferences', { method: 'PATCH', body: JSON.stringify({ theme }) });
+      setUser(result.user);
+    } catch (cause) {
+      setUser(previous);
+      throw cause;
+    }
+  }
+
   if (loading) return <div className="auth-loading"><TentTree /><strong>Securing Camp Ledger…</strong></div>;
   if (recoveryNotice) return <RecoveryCodeCard notice={recoveryNotice} onContinue={() => setRecoveryNotice(undefined)} />;
   if (user && contextValue) return (
     <AuthContext.Provider value={contextValue}>
       {children}
-      {accountOpen && <AccountModal user={user} onClose={() => setAccountOpen(false)} onLogout={() => void logout()} onRecoveryNotice={setRecoveryNotice} />}
+      {accountOpen && <AccountModal user={user} onClose={() => setAccountOpen(false)} onLogout={() => void logout()} onRecoveryNotice={setRecoveryNotice} onThemeChange={changeTheme} />}
     </AuthContext.Provider>
   );
 
